@@ -373,7 +373,26 @@
     <p id="usageText" style="font-size:14px;color:var(--text2);">로딩 중...</p>
   </div>
 
-  <!-- ② 이미지 업로드 -->
+  <!-- ② 카테고리 선택 (이미지 위로 이동) -->
+  <div class="card">
+    <p class="card-label">이미지 상품 카테고리 선택</p>
+    <select id="categorySelect" onchange="onCategoryChange()">
+      <option value="">카테고리 선택</option>
+      <option value="clothing">의류</option>
+      <option value="shoes">신발</option>
+      <option value="bag">가방</option>
+      <option value="fashion_acc">패션잡화 (모자·벨트·지갑 등)</option>
+      <option value="cosmetics">화장품</option>
+      <option value="appliance">가전제품</option>
+      <option value="living">생활용품</option>
+      <option value="food">식품</option>
+      <option value="furniture">가구</option>
+      <option value="sports">스포츠/레저</option>
+      <option value="recruit">채용 공고</option>
+    </select>
+  </div>
+
+  <!-- ③ 이미지 업로드 -->
   <div class="card">
     <p class="card-label">상품 이미지 첨부</p>
     <div class="upload-zone" id="uploadZone">
@@ -392,24 +411,7 @@
     <div class="ai-status" id="aiStatus"></div>
   </div>
 
-  <!-- ③ 카테고리 선택 -->
-  <div class="card">
-    <p class="card-label">상품정보고시 카테고리</p>
-    <select id="categorySelect" onchange="onCategoryChange()">
-      <option value="">카테고리 선택</option>
-      <option value="clothing">의류</option>
-      <option value="shoes">신발</option>
-      <option value="bag">가방</option>
-      <option value="fashion_acc">패션잡화 (모자·벨트·지갑 등)</option>
-      <option value="cosmetics">화장품</option>
-      <option value="appliance">가전제품</option>
-      <option value="living">생활용품</option>
-      <option value="food">식품</option>
-      <option value="furniture">가구</option>
-      <option value="sports">스포츠/레저</option>
-      <option value="recruit">채용 공고</option>
-    </select>
-  </div>
+
 
   <!-- ④ 공통 정보 (카테고리 선택 후 노출) -->
   <div class="card hidden" id="commonSection">
