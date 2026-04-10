@@ -1,19 +1,47 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
-
-// data 폴더 없으면 자동 생성
-const dataDir = path.join(__dirname, '../../data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir);
-}
-
-const db = new Database(path.join(dataDir, 'usage.db'));
-
-// 스키마 자동 실행
-const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+ 
+const dbPath = path.join(__dirname, '../../data/metabridge.db');
+const dataDir = path.dirname(dbPath);
+ 
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+ 
+const db = new Database(dbPath);
+ 
+const schema = `
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  google_id TEXT UNIQUE NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  name TEXT,
+  avatar TEXT,
+  role TEXT DEFAULT 'user',
+  monthly_limit INTEGER DEFAULT 10,
+  monthly_used INTEGER DEFAULT 0,
+  last_reset TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+ 
+CREATE TABLE IF NOT EXISTS usage_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER,
+  type TEXT,
+  category TEXT,
+  status TEXT DEFAULT 'success',
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+ 
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT
+);
+ 
+INSERT OR IGNORE INTO settings (key, value) VALUES ('default_limit', '10');
+`;
+ 
 db.exec(schema);
-
-console.log('DB 연결 완료');
-
+ 
 module.exports = db;
+ 
