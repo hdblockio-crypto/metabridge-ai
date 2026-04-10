@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 상품 정보 변환기</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F7F6F2;
+    --surface: #FFFFFF;
+    --surface2: #F1EFE8;
+    --border: #D3D1C7;
+    --border2: #B4B2A9;
+    --text: #1A1A18;
+    --text2: #5F5E5A;
+    --text3: #888780;
+    --accent: #1A1A18;
+    --accent-bg: #1A1A18;
+    --accent-text: #FFFFFF;
+    --blue: #185FA5;
+    --blue-bg: #E6F1FB;
+    --blue-text: #0C447C;
+    --green: #3B6D11;
+    --green-bg: #EAF3DE;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 1rem 4rem;
+  }
+
+  /* GNB */
+  .gnb {
+    position: sticky; top: 0; left: 0; right: 0;
+    height: 56px;
+    background: rgba(247,246,242,0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 2rem;
+    z-index: 100;
+    justify-content: space-between;
+    margin: 0 -1rem 2rem;
+  }
+  .gnb-logo {
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    color: var(--text); letter-spacing: 0.12em;
+    text-decoration: none; font-weight: 500;
+  }
+  .gnb-nav { display: flex; align-items: center; gap: 4px; }
+  .gnb-link {
+    font-size: 13px; font-weight: 500; color: var(--text2);
+    text-decoration: none; padding: 6px 14px;
+    border-radius: 20px; transition: all 0.18s;
+    border: 1px solid transparent;
+  }
+  .gnb-link:hover { color: var(--text); background: var(--surface2); border-color: var(--border); }
+  .gnb-link.active { color: var(--text); background: var(--surface); border-color: var(--border); box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+  .gnb-right { display: flex; align-items: center; gap: 8px; }
+  .gnb-user {
+    font-size: 12px; font-weight: 500;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 12px; color: var(--text2);
+  }
+  .gnb-btn {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 12px; font-weight: 500; color: var(--text2);
+    background: none; border: none; cursor: pointer; padding: 4px 8px;
+  }
+  .gnb-btn:hover { color: var(--text); }
+
+  /* D-day 배너 */
+  .dday-banner {
+    margin: 0 -1rem;
+    padding: 10px 2rem;
+    font-size: 13px; font-weight: 500;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text2);
+    align-items: center; justify-content: space-between;
+    gap: 8px;
+  }
+  .dday-banner.warn {
+    background: #FEF3E2;
+    border-color: #FAC775;
+    color: #854F0B;
+  }
+  .dday-banner.danger {
+    background: #FAECE7;
+    border-color: #F5C4B3;
+    color: #993C1D;
+  }
+  .dday-left { display: flex; align-items: center; gap: 10px; }
+  .dday-plan {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+    padding: 2px 8px; border-radius: 20px;
+    background: var(--surface); border: 1px solid var(--border2);
+    color: var(--text3);
+  }
+  .dday-banner.warn .dday-plan  { background: #FAEEDA; border-color: #FAC775; color: #854F0B; }
+  .dday-banner.danger .dday-plan { background: #FAECE7; border-color: #F5C4B3; color: #993C1D; }
+  .dday-count { font-size: 12px; color: var(--text3); }
+  .dday-banner.warn .dday-count   { color: #BA7517; }
+  .dday-banner.danger .dday-count { color: #993C1D; }
+
+  /* 모바일 탭바 */
+  .mobile-tabbar {
+    display: none;
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: 60px;
+    background: rgba(247,246,242,0.96);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tabbar-inner { display: flex; height: 60px; }
+  .tab-item {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 4px;
+    text-decoration: none; color: var(--text3);
+    font-size: 11px; font-weight: 500; transition: color 0.15s;
+  }
+  .tab-item.active { color: var(--text); }
+  .tab-icon { font-size: 20px; line-height: 1; }
+  .tab-label { font-size: 10px; letter-spacing: 0.02em; }
+
+  .container { max-width: 820px; margin: 0 auto; }
+
+  header { margin-bottom: 2.5rem; }
+  .logo { font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 500; color: var(--text); letter-spacing: -0.01em; margin-bottom: 8px; }
+  .subtitle { font-size: 14px; color: var(--text2); margin-top: 6px; line-height: 1.6; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .card-label {
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.08em; color: var(--text3);
+    text-transform: uppercase; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .badge {
+    font-size: 10px; font-weight: 700;
+    padding: 2px 7px; border-radius: 20px;
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .badge-req  { background: #FAECE7; color: #993C1D; }
+  .badge-ai   { background: var(--blue-bg); color: var(--blue); }
+  .badge-beta { background: #FDE9A0; color: #7A5800; }
+
+  /* 업로드 */
+  .upload-zone {
+    border: 1.5px dashed var(--border2);
+    border-radius: var(--radius);
+    padding: 2.5rem 1rem;
+    text-align: center;
+    cursor: pointer; transition: all 0.18s;
+    position: relative; background: var(--bg);
+  }
+  .upload-zone:hover, .upload-zone.drag { background: #EDECD7; border-color: var(--text); }
+  .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .upload-icon { font-size: 32px; margin-bottom: 10px; line-height: 1; }
+  .upload-main { font-size: 15px; font-weight: 500; color: var(--text); }
+  .upload-main span { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+  .upload-sub { font-size: 12px; color: var(--text3); margin-top: 5px; }
+
+  #previewWrap { display: none; margin-top: 14px; position: relative; }
+  #previewImg { width: 100%; max-height: 280px; object-fit: contain; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface2); }
+  .preview-remove {
+    position: absolute; top: 8px; right: 8px;
+    background: rgba(0,0,0,0.55); color: #fff;
+    border: none; border-radius: 50%; width: 26px; height: 26px;
+    font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+
+  /* AI 추출 버튼 */
+  .ai-extract-btn {
+    width: 100%; margin-top: 14px; padding: 11px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px; font-weight: 500;
+    background: var(--blue-bg); color: var(--blue);
+    border: 1px solid #B5D4F4; border-radius: var(--radius-sm);
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .ai-extract-btn:hover { background: #d0e8f9; }
+  .ai-extract-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* OpenAI API 키 */
+  .api-row { display: flex; gap: 8px; align-items: center; }
+  .api-row input[type="text"], .api-row input[type="password"] {
+    font-family: 'DM Mono', monospace; font-size: 13px; flex: 1;
+  }
+  .api-toggle {
+    padding: 9px 14px; font-size: 13px; font-weight: 500;
+    background: var(--surface2); color: var(--text2);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    cursor: pointer; white-space: nowrap;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .api-toggle:hover { background: var(--border); }
+
+  /* 필드 */
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field-item { display: flex; flex-direction: column; gap: 5px; }
+  .field-item.full { grid-column: 1 / -1; }
+  .field-label { font-size: 12px; font-weight: 500; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+  .field-hint { font-size: 11px; color: var(--text3); }
+
+  input[type="text"], input[type="password"], input[type="number"], textarea, select {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px; color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 9px 12px;
+    outline: none; width: 100%;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--text); }
+  input.ai-filled { background: #f0f7ff; border-color: #B5D4F4; }
+  textarea { resize: vertical; min-height: 76px; line-height: 1.6; }
+
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    cursor: pointer;
+  }
+
+  .divider { height: 1px; background: var(--border); margin: 1.5rem 0; }
+
+  /* 태그 칩 */
+  .tag-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 11px; border-radius: 20px; cursor: pointer;
+    font-size: 13px; font-weight: 500; color: var(--text2);
+    background: var(--surface2); border: 1.5px solid var(--border);
+    transition: all 0.15s; user-select: none;
+  }
+  .tag-chip:hover { border-color: var(--border2); }
+  .tag-chip input[type="checkbox"] { width: 13px; height: 13px; accent-color: var(--accent); cursor: pointer; }
+  .tag-chip.checked { background: var(--accent-bg); color: var(--accent-text); border-color: var(--accent-bg); }
+
+  /* 변환 버튼 */
+  .convert-btn {
+    width: 100%; padding: 15px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 16px; font-weight: 700;
+    background: var(--accent-bg); color: var(--accent-text);
+    border: none; border-radius: var(--radius);
+    cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+    margin-top: 1rem; letter-spacing: 0.02em;
+  }
+  .convert-btn:hover { opacity: 0.88; }
+  .convert-btn:active { transform: scale(0.99); }
+  .convert-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .progress-wrap { margin-top: 12px; display: none; }
+  .progress-label { font-size: 12px; color: var(--text3); margin-bottom: 6px; }
+  .progress-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0%; background: var(--text); border-radius: 2px; transition: width 0.35s ease; }
+
+  .result-wrap {
+    display: none; margin-top: 1.5rem;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+  }
+  .result-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .result-header-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .result-header-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .result-body { padding: 1.5rem; }
+  #resultCanvas { width: 100%; border-radius: var(--radius-sm); display: block; border: 1px solid var(--border); }
+
+  .download-btn {
+    width: 100%; margin-top: 12px; padding: 12px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px; font-weight: 500;
+    background: var(--green-bg); color: var(--green);
+    border: 1px solid #C0DD97; border-radius: var(--radius-sm);
+    cursor: pointer; transition: background 0.15s;
+  }
+  .download-btn:hover { background: #d3eabc; }
+
+  .ai-status {
+    font-size: 12px; color: var(--blue);
+    background: var(--blue-bg); border: 1px solid #B5D4F4;
+    border-radius: var(--radius-sm); padding: 8px 12px;
+    margin-top: 10px; display: none; line-height: 1.5;
+  }
+
+  /* 사이즈 박스 */
+  .size-box {
+    margin-top: 14px; padding: 14px;
+    background: var(--surface2);
+    border-radius: var(--radius-sm); border: 1px solid var(--border);
+  }
+  .size-box-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+
+  .hidden { display: none; }
+
+  @media (max-width: 540px) {
+    .field-grid { grid-template-columns: 1fr; }
+    .gnb { padding: 0 1rem; height: 52px; }
+    .gnb-nav { display: none; }
+    .gnb-user { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mobile-tabbar { display: block; }
+    .container { padding-bottom: 80px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="gnb">
+  <a href="index.html" class="gnb-logo">MetaBridge AI</a>
+  <div class="gnb-nav">
+    <a href="converter.html" class="gnb-link active">변환하기</a>
+    <a href="dashboard.html" class="gnb-link">대시보드</a>
+  </div>
+  <div class="gnb-right">
+    <span class="gnb-user" id="gnbUser"></span>
+    <button class="gnb-btn" onclick="doLogout()">로그아웃</button>
+  </div>
+</nav>
+
+<!-- D-day 배너 -->
+<div class="dday-banner" id="ddayBanner" style="display:none;">
+  <div class="dday-left">
+    <span class="dday-plan" id="ddayPlan"></span>
+    <span id="ddayText"></span>
+  </div>
+  <span class="dday-count" id="ddayCount"></span>
+</div>
+
+<nav class="mobile-tabbar">
+  <div class="tabbar-inner">
+    <a href="converter.html" class="tab-item active">
+      <span class="tab-icon">⚡</span>
+      <span class="tab-label">변환하기</span>
+    </a>
+    <a href="dashboard.html" class="tab-item">
+      <span class="tab-icon">📊</span>
+      <span class="tab-label">대시보드</span>
+    </a>
+  </div>
+</nav>
+
+<div class="container">
+
+  <header>
+    <p class="logo">MetaBridge AI</p>
+    <p class="subtitle">상품 이미지를 올리면 AI가 정보를 자동 추출합니다.<br>수정 후 변환 버튼을 누르면 AI가 읽기 좋은 구조화 이미지로 다운로드됩니다.</p>
+  </header>
+
+  <!-- ① 사용량 표시 -->
+  <div class="card" id="usageCard" style="display:none;">
+    <p class="card-label">이번 달 사용량 <span class="badge badge-ai">AI</span></p>
+    <p id="usageText" style="font-size:14px;color:var(--text2);">로딩 중...</p>
+  </div>
+
+  <!-- ② 이미지 업로드 -->
+  <div class="card">
+    <p class="card-label">상품 이미지 첨부</p>
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="imgInput" accept="image/*">
+      <div class="upload-icon">🖼</div>
+      <p class="upload-main"><span>이미지 선택</span> 또는 드래그</p>
+      <p class="upload-sub">JPG · PNG · WEBP · 최대 10MB</p>
+    </div>
+    <div id="previewWrap">
+      <img id="previewImg" alt="미리보기">
+      <button class="preview-remove" onclick="removeImg()">✕</button>
+    </div>
+    <button class="ai-extract-btn" id="extractBtn" disabled onclick="extractWithAI()">
+      <span>✦</span> AI로 정보 자동 추출
+    </button>
+    <div class="ai-status" id="aiStatus"></div>
+  </div>
+
+  <!-- ③ 카테고리 선택 -->
+  <div class="card">
+    <p class="card-label">상품정보고시 카테고리</p>
+    <select id="categorySelect" onchange="onCategoryChange()">
+      <option value="">카테고리 선택</option>
+      <option value="clothing">의류</option>
+      <option value="shoes">신발</option>
+      <option value="bag">가방</option>
+      <option value="fashion_acc">패션잡화 (모자·벨트·지갑 등)</option>
+      <option value="cosmetics">화장품</option>
+      <option value="appliance">가전제품</option>
+      <option value="living">생활용품</option>
+      <option value="food">식품</option>
+      <option value="furniture">가구</option>
+      <option value="sports">스포츠/레저</option>
+      <option value="recruit">채용 공고</option>
+    </select>
+  </div>
+
+  <!-- ④ 공통 정보 (카테고리 선택 후 노출) -->
+  <div class="card hidden" id="commonSection">
+    <p class="card-label">공통 정보 <span class="badge badge-req">필수</span></p>
+    <div class="field-grid">
+      <div class="field-item">
+        <span class="field-label">제조자 / 수입자</span>
+        <input type="text" id="c_manufacturer" placeholder="예: (주)메타브릿지">
+      </div>
+      <div class="field-item">
+        <span class="field-label">제조국</span>
+        <input type="text" id="c_origin" placeholder="예: 대한민국">
+      </div>
+      <div class="field-item full">
+        <span class="field-label">품질보증기준</span>
+        <input type="text" id="c_warranty" placeholder="예: 소비자기본법에 따른 소비자분쟁해결기준에 의함">
+      </div>
+      <div class="field-item full">
+        <span class="field-label">A/S 책임자 및 연락처</span>
+        <input type="text" id="c_as" placeholder="예: 고객센터 1588-0000">
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑤ 카테고리별 동적 폼 -->
+  <div id="categoryFormSection"></div>
+
+  <!-- ⑥ 변환 -->
+  <div class="progress-wrap" id="progressWrap">
+    <p class="progress-label" id="progressLabel">변환 중...</p>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+  <button class="convert-btn" id="convertBtn" disabled onclick="doConvert()">이미지 변환하기</button>
+
+  <!-- ⑦ 결과 -->
+
+  <!-- ⑧ 건의사항 -->
+  <div class="card" style="margin-top:2rem; border-color:#D3D1C7;">
+    <p class="card-label">건의사항 💬</p>
+    <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px;">
+      등록 중 오류나 추가하고 싶은 내용을 올려주시면 반영하겠습니다.
+    </p>
+    <div class="field-grid">
+      <div class="field-item">
+        <span class="field-label">카테고리</span>
+        <select id="fb_category">
+          <option value="">선택</option>
+          <option value="오류">오류 신고</option>
+          <option value="기능 추가">기능 추가 요청</option>
+          <option value="카테고리 추가">카테고리 추가</option>
+          <option value="기타">기타</option>
+        </select>
+      </div>
+      <div class="field-item">
+        <span class="field-label">이메일 (선택)</span>
+        <input type="text" id="fb_email" placeholder="답변 받을 이메일">
+      </div>
+      <div class="field-item full">
+        <span class="field-label">내용</span>
+        <textarea id="fb_content" placeholder="내용을 입력해주세요." style="min-height:80px;"></textarea>
+      </div>
+    </div>
+    <button class="ai-extract-btn" style="margin-top:12px;background:#F1EFE8;color:var(--text);border-color:var(--border);" onclick="submitFeedback()">
+      📨 건의사항 보내기
+    </button>
+    <div class="ai-status" id="fbStatus"></div>
+  </div>
+
+  <div class="result-wrap" id="resultWrap">
+    <div class="result-header">
+      <div>
+        <p class="result-header-title">변환 완료</p>
+        <p class="result-header-sub">AI가 읽기 좋은 구조화 상품 이미지</p>
+      </div>
+    </div>
+    <div class="result-body">
+      <canvas id="resultCanvas"></canvas>
+      <button class="download-btn" onclick="doDownload()">⬇ PNG 다운로드</button>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ════════════════════════════════════════════════
+// 0. GNB / Auth
+// ════════════════════════════════════════════════
+(function () {
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  const token = localStorage.getItem('token');
+  const gnbUser = document.getElementById('gnbUser');
+  if (user && token && gnbUser) gnbUser.textContent = user.email;
+  initDdayBanner();
+})();
+function doLogout() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('joinDate');
+  localStorage.removeItem('paidDate');
+  localStorage.removeItem('remainCount');
+  localStorage.removeItem('planType');
+  location.href = 'login.html';
+}
+let apiVisible = false;
+function toggleApiVis() {
+  const el = document.getElementById('apiKey');
+  apiVisible = !apiVisible;
+  el.type = apiVisible ? 'text' : 'password';
+}
+
+// ════════════════════════════════════════════════
+// 1. SCHEMA
+// ════════════════════════════════════════════════
+const CATEGORY_SCHEMA = {
+
+  // ── 의류 ─────────────────────────────────────────────────
+  clothing: {
+    label: '의류',
+    sections: [
+      { title: '상품정보고시', badge: 'req', fields: [
+        { key:'material_main', label:'소재 (주원단)', type:'text', placeholder:'예: 면 80%' },
+        { key:'material_mix',  label:'소재 (혼용율)', type:'text', placeholder:'예: 폴리에스터 20%' },
+        { key:'color', label:'색상', type:'text', placeholder:'예: 블랙, 네이비', hint:'여러 색상은 쉼표로 구분' },
+        { key:'wash',  label:'세탁방법', type:'text', full:true, placeholder:'예: 30도 이하 손세탁, 그늘 건조' },
+        { key:'clothing_type', label:'의류 종류', type:'clothing_type_select', full:true },
+        { key:'_size_ui', label:'', type:'clothing_size_ui', full:true }
+      ]},
+      { title: 'AI 추천 정보', badge: 'ai', fields: [
+        { key:'fit_type',    label:'핏 유형', type:'fit_type_select', full:true },
+        { key:'fit',         label:'핏 설명', type:'textarea', full:true, placeholder:'예: 어깨는 정사이즈, 가슴에 여유가 있어 답답하지 않은 실루엣' },
+        { key:'body_type',   label:'권장 체형', type:'checkbox_group', full:true, options:['보통','마른체형','근육형','통통한체형','상체왜소','하체비만','역삼각형'] },
+        { key:'style',       label:'권장 스타일', type:'checkbox_group', full:true, options:['데일리','출퇴근','레이어드','캐주얼','미니멀','스트릿','오피스룩','아웃도어','스포티'] },
+        { key:'body_comp',   label:'체형 보완 포인트', type:'textarea', full:true, placeholder:'예: 하체를 슬림하게 연출', style:'min-height:56px' },
+        { key:'season_feel', label:'계절감', type:'text', full:true, placeholder:'예: 늦가을~초겨울 / 사계절' },
+        { key:'stretch',     label:'신축성', type:'text', full:true, placeholder:'예: 스판 2% 혼방, 활동하기 편안' }
+      ]}
+    ]
+  },
+
+  // ── 신발 ─────────────────────────────────────────────────
+  shoes: {
+    label: '신발',
+    sections: [{ title:'상품정보고시', badge:'req', fields: [
+      { key:'upper_material', label:'갑피 소재', type:'text', placeholder:'예: 천연가죽' },
+      { key:'sole_material',  label:'밑창 소재', type:'text', placeholder:'예: 천연고무' },
+      { key:'color', label:'색상', type:'text', placeholder:'예: 블랙, 화이트' },
+      { key:'wash',  label:'관리방법', type:'text', full:true, placeholder:'예: 부드러운 천으로 닦아주세요' },
+      { key:'_shoes_size_ui', label:'', type:'shoes_size_ui', full:true }
+    ]}]
+  },
+
+  // ── 가방 ─────────────────────────────────────────────────
+  bag: {
+    label: '가방',
+    sections: [{ title:'상품정보고시', badge:'req', fields: [
+      { key:'material', label:'소재', type:'text', placeholder:'예: 소가죽, 폴리에스터' },
+      { key:'color',    label:'색상', type:'text', placeholder:'예: 베이지' },
+      { key:'hardware', label:'부자재 소재', type:'text', placeholder:'예: 도금 금속' },
+      { key:'wash',     label:'관리방법', type:'text', full:true, placeholder:'예: 건조한 곳 보관, 방수스프레이 권장' },
+      { key:'_bag_size_ui', label:'', type:'bag_size_ui', full:true }
+    ]}]
+  },
+
+  // ── 패션잡화 ─────────────────────────────────────────────
+  fashion_acc: {
+    label: '패션잡화',
+    sections: [{ title:'상품정보고시', badge:'req', fields: [
+      { key:'product_type', label:'품목', type:'text', full:true, placeholder:'예: 버킷햇 / 가죽벨트 / 카드지갑' },
+      { key:'material', label:'소재', type:'text', placeholder:'예: 면 100%' },
+      { key:'color',    label:'색상', type:'text', placeholder:'예: 아이보리' },
+      { key:'wash',     label:'관리방법', type:'text', full:true, placeholder:'예: 찬물 손세탁, 그늘 건조' },
+      { key:'_acc_size_ui', label:'', type:'acc_size_ui', full:true }
+    ]}]
+  },
+
+  // ── 화장품 ───────────────────────────────────────────────
+  cosmetics: {
+    label: '화장품',
+    sections: [{ title:'상품정보고시', badge:'req', fields: [
+      { key:'_cosm_set',     label:'', type:'cosmetics_set_select', full:true },
+      { key:'set_items',     label:'세트 구성 품목', type:'textarea', full:true, placeholder:'예: 토너 150ml + 에센스 50ml + 크림 50ml', hint:'세트 선택 시 입력', hiddenId:'cosmetics_set_items_wrap' },
+      { key:'capacity',      label:'용량 / 중량', type:'text', placeholder:'예: 50ml' },
+      { key:'cosmetic_type', label:'화장품 유형', type:'text', placeholder:'예: 기초화장품 (에센스)' },
+      { key:'ingredients',   label:'주요 성분', type:'textarea', full:true, placeholder:'예: 정제수, 부틸렌글라이콜, 글리세린...' },
+      { key:'usage',         label:'사용방법', type:'textarea', full:true, placeholder:'예: 세안 후 적당량을 얼굴에 도포' },
+      { key:'expiry',        label:'사용기한', type:'text', placeholder:'예: 제조일로부터 36개월' }
+    ]}]
+  },
+
+  // ── 가전제품 ─────────────────────────────────────────────
+  appliance: {
+    label: '가전제품',
+    sections: [{ title:'상품정보고시', badge:'req', fields: [
+      { key:'model',         label:'모델명', type:'text', placeholder:'예: MB-W100' },
+      { key:'rated_voltage', label:'정격전압 / 소비전력', type:'text', placeholder:'예: AC 220V, 60Hz, 1000W' },
+      { key:'dimensions',    label:'크기 (가로×세로×높이)', type:'text', placeholder:'예: 300×250×200 mm' },
+      { key:'color',         label:'색상', type:'text', placeholder:'예: 화이트' },
+      { key:'kc_cert',       label:'KC 인증번호', type:'text', placeholder:'예: R-R-ABC-모델명' },
+      { key:'warranty_period', label:'품질보증기간', type:'text', placeholder:'예: 1년' }
+    ]}]
+  },
+
+  // ── 생활용품 ─────────────────────────────────────────────
+  living: {
+    label: '생활용품',
+    sections: [{ title:'상품정보고시', badge:'req', fields: [
+      { key:'material',   label:'소재 / 성분', type:'text', full:true, placeholder:'예: 스테인리스 스틸 304' },
+      { key:'dimensions', label:'크기', type:'text', placeholder:'예: 지름 18cm × 높이 10cm' },
+      { key:'color',      label:'색상', type:'text', placeholder:'예: 실버' },
+      { key:'caution',    label:'사용 주의사항', type:'textarea', full:true, placeholder:'예: 화기 주변 보관 금지, 어린이 손 닿지 않는 곳 보관' }
+    ]}]
+  },
+
+  // ── 식품 ─────────────────────────────────────────────────
+  food: {
+    label: '식품',
+    sections: [{ title:'상품정보고시', badge:'req', fields: [
+      { key:'food_type',   label:'식품 유형', type:'text', placeholder:'예: 과자류 (비스킷)' },
+      { key:'capacity',    label:'중량 / 용량', type:'text', placeholder:'예: 250g' },
+      { key:'ingredients', label:'원재료 및 함량', type:'textarea', full:true, placeholder:'예: 밀가루 60%, 설탕 20%, 버터 10%...' },
+      { key:'allergy',     label:'알레르기 유발물질', type:'text', full:true, placeholder:'예: 밀, 계란, 우유 함유' },
+      { key:'expiry',      label:'유통기한', type:'text', placeholder:'예: 제조일로부터 12개월' },
+      { key:'storage',     label:'보관방법', type:'text', full:true, placeholder:'예: 직사광선 피해 서늘하고 건조한 곳 보관' }
+    ]}]
+  },
+
+  // ── 가구 ─────────────────────────────────────────────────
+  furniture: {
+    label: '가구',
+    sections: [{ title:'상품정보고시', badge:'req', fields: [
+      { key:'material',   label:'소재', type:'text', full:true, placeholder:'예: 참나무 원목 프레임 / MDF 상판' },
+      { key:'dimensions', label:'크기 (가로×세로×높이)', type:'text', placeholder:'예: 1200×600×740 mm' },
+      { key:'color',      label:'색상 / 마감', type:'text', placeholder:'예: 내추럴 오크' },
+      { key:'load',       label:'최대 하중', type:'text', placeholder:'예: 80 kg' },
+      { key:'_furniture_assembly', label:'', type:'furniture_assembly_select', full:true },
+      { key:'assembly_note', label:'조립 상세 안내', type:'textarea', full:true, placeholder:'예: 나사 4개 포함 / 배송기사 방문일 협의 필요' },
+      { key:'caution',    label:'사용 주의사항', type:'text', full:true, placeholder:'예: 직사광선 및 습기 피해 보관' }
+    ]}]
+  },
+
+  // ── 스포츠/레저 ──────────────────────────────────────────
+  sports: {
+    label: '스포츠/레저',
+    sections: [{ title:'상품정보고시', badge:'req', fields: [
+      { key:'_sports_type', label:'', type:'sports_type_select', full:true },
+      { key:'material', label:'소재', type:'text', full:true, placeholder:'예: 폴리에스터 92%, 스판덱스 8%' },
+      { key:'color',    label:'색상', type:'text', placeholder:'예: 로얄블루' },
+      { key:'_sports_clothing_type', label:'', type:'sports_clothing_type_select', full:true },
+      { key:'_sports_size_ui', label:'', type:'sports_size_ui', full:true },
+      { key:'dimensions',   label:'크기 / 규격', type:'text', placeholder:'예: 68×44cm', sportsGoods:true },
+      { key:'weight',       label:'무게', type:'text', placeholder:'예: 280g', sportsGoods:true },
+      { key:'function',     label:'기능 / 특성', type:'textarea', full:true, placeholder:'예: 경량 알루미늄 프레임, 초보자~중급자용', sportsGoods:true },
+      { key:'goods_caution',label:'사용 주의사항', type:'textarea', full:true, placeholder:'예: 실외 전용, 우천 시 사용 금지', sportsGoods:true }
+    ]}]
+  },
+
+  // ── 채용 공고 ─────────────────────────────────────────────
+  recruit: {
+    label: '채용 공고',
+    sections: [
+      { title: '채용 기본 정보', badge: 'req', fields: [
+        { key:'job_title',       label:'채용 직무 / 포지션', type:'text', full:true, placeholder:'예: 프론트엔드 개발자 / 영업팀 대리' },
+        { key:'employment_type', label:'고용 형태', type:'checkbox_group', full:true, options:['정규직','계약직','인턴','프리랜서','파트타임'] },
+        { key:'experience',      label:'필요 경력', type:'text', placeholder:'예: 3년 이상 / 신입 가능' },
+        { key:'education',       label:'학력', type:'text', placeholder:'예: 대졸 이상 / 무관' },
+        { key:'work_location',   label:'근무지', type:'text', placeholder:'예: 서울 강남구 테헤란로' },
+        { key:'work_hours',      label:'근무 시간', type:'text', placeholder:'예: 09:00~18:00 (주 5일)' },
+        { key:'salary',          label:'급여', type:'text', placeholder:'예: 연봉 협의 / 4,000~5,000만원' },
+        { key:'deadline',        label:'지원 마감일', type:'text', placeholder:'예: 2025-03-31 / 채용 시 마감' }
+      ]},
+      { title: '상세 직무 내용', badge: 'req', fields: [
+        { key:'job_desc',     label:'주요 업무', type:'textarea', full:true, placeholder:'예: 웹 서비스 개발 / 사용자 경험 개선 / 코드 리뷰' },
+        { key:'requirements', label:'자격 요건', type:'textarea', full:true, placeholder:'예: React 3년 이상 / TypeScript / Git' },
+        { key:'preferred',    label:'우대 사항', type:'textarea', full:true, placeholder:'예: 스타트업 경험 / 디자인 시스템 구축 경험' }
+      ]},
+      { title: '복리후생 & 회사 어필', badge: 'ai', fields: [
+        { key:'benefits', label:'복리후생', type:'checkbox_group', full:true,
+          options:['4대보험','퇴직금','연차','반차','유연근무','재택근무','식대 지원','교통비 지원','도서 지원','자기계발비','장비 지원','스톡옵션','성과급','경조사 지원','건강검진'] },
+        { key:'benefits_detail',  label:'복리후생 상세', type:'textarea', full:true, placeholder:'예: 점심 식대 월 15만원, 원격근무 주 2회, 최신 맥북 지급' },
+        { key:'company_culture',  label:'회사 문화', type:'textarea', full:true, placeholder:'예: 수평적 조직문화, 자율 출퇴근, 빠른 성장 기회' },
+        { key:'company_appeal',   label:'우리 회사 어필 포인트', type:'textarea', full:true, placeholder:'예: 시리즈B 투자 유치, 업계 성장률 1위, 매출 100억 달성' },
+        { key:'team_intro',       label:'팀 / 부서 소개', type:'textarea', full:true, placeholder:'예: 10명 규모 프로덕트팀, 주 1회 스탠드업, 분기 워크숍' }
+      ]},
+      { title: '지원 방법', badge: 'req', fields: [
+        { key:'apply_method',  label:'지원 방법', type:'textarea', full:true, placeholder:'예: recruit@company.com으로 이력서 + 포트폴리오 제출' },
+        { key:'apply_process', label:'전형 과정', type:'text', full:true, placeholder:'예: 서류 → 1차 면접 → 2차 면접 → 최종 합격' },
+        { key:'contact',       label:'문의처', type:'text', placeholder:'예: recruit@company.com' },
+        { key:'start_date',    label:'입사 예정일', type:'text', placeholder:'예: 즉시 입사 / 협의 가능' }
+      ]}
+    ]
+  }
+
+};
+
+// ════════════════════════════════════════════════
+// 2. 사이즈 상수
+// ════════════════════════════════════════════════
+const CLOTHING_SIZE_OPTIONS = {
+  top:    ['S','M','L','XL','FREE'],
+  bottom: ['28','29','30','31','32','33','34','36','38','FREE']
+};
+const CLOTHING_SIZE_FIELDS = {
+  top:    ['shoulder','chest','length','sleeve'],
+  bottom: ['waist','thigh','rise','length','hem']
+};
+const CLOTHING_SIZE_LABELS = {
+  shoulder:'어깨', chest:'가슴', length:'총장', sleeve:'소매',
+  waist:'허리', thigh:'허벅지', rise:'밑위', hem:'밑단'
+};
+
+const SHOES_SIZE_OPTIONS = ['220','225','230','235','240','245','250','255','260','265','270','275','280','285','290'];
+const SHOES_SIZE_FIELDS  = ['width','insole'];
+const SHOES_SIZE_LABELS  = { width:'발볼(mm)', insole:'깔창길이(mm)' };
+
+const BAG_SIZE_OPTIONS = ['S','M','L','XL','ONE SIZE'];
+const BAG_SIZE_FIELDS  = ['width','height','depth'];
+const BAG_SIZE_LABELS  = { width:'가로(cm)', height:'세로(cm)', depth:'폭(cm)' };
+
+const ACC_SIZE_OPTIONS = ['FREE','S','M','L','XL','55cm','57cm','59cm','61cm'];
+const ACC_SIZE_FIELDS  = ['spec'];
+const ACC_SIZE_LABELS  = { spec:'규격/둘레(cm)' };
+
+// 상태
+let uploadedDataUrl     = null;
+let currentCat          = '';
+let clothingType        = '';       // top | bottom
+let checkedClothingSizes = [];
+let checkedShoesSizes   = [];
+let checkedBagSizes     = [];
+let checkedAccSizes     = [];
+let sportsItemType      = '';       // clothing | goods
+let sportsClothingType  = '';       // top | bottom
+
+// ════════════════════════════════════════════════
+// 3. 카테고리 변경
+// ════════════════════════════════════════════════
+function onCategoryChange() {
+  currentCat = document.getElementById('categorySelect').value;
+  const commonSection = document.getElementById('commonSection');
+  const formSection   = document.getElementById('categoryFormSection');
+
+  // 상태 초기화
+  clothingType = ''; checkedClothingSizes = [];
+  checkedShoesSizes = []; checkedBagSizes = []; checkedAccSizes = [];
+  sportsItemType = ''; sportsClothingType = '';
+
+  if (!currentCat) {
+    commonSection.classList.add('hidden');
+    formSection.innerHTML = '';
+    checkConvertReady(); return;
+  }
+
+  // 채용은 공통(제조자 등) 섹션 숨김
+  if (currentCat === 'recruit') {
+    commonSection.classList.add('hidden');
+  } else {
+    commonSection.classList.remove('hidden');
+  }
+
+  formSection.innerHTML = '';
+  const schema = CATEGORY_SCHEMA[currentCat];
+  if (!schema) { checkConvertReady(); return; }
+
+  schema.sections.forEach(sec => formSection.appendChild(buildSection(sec, currentCat)));
+  checkConvertReady();
+}
+
+// ════════════════════════════════════════════════
+// 4. 섹션 / 필드 렌더링
+// ════════════════════════════════════════════════
+function buildSection(sec, cat) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  const badgeMap = { req:'<span class="badge badge-req">필수</span>', ai:'<span class="badge badge-ai">AI 최적화</span>' };
+  const lbl = document.createElement('p');
+  lbl.className = 'card-label';
+  lbl.innerHTML = sec.title + ' ' + (badgeMap[sec.badge] || '');
+  card.appendChild(lbl);
+  const grid = document.createElement('div');
+  grid.className = 'field-grid';
+  sec.fields.forEach(field => {
+    const el = renderField(field, cat);
+    if (el) grid.appendChild(el);
+  });
+  card.appendChild(grid);
+  return card;
+}
+
+function renderField(field, cat) {
+  // ── 특수 UI 타입 ──
+  switch (field.type) {
+    case 'clothing_type_select':      return buildClothingTypeSelect();
+    case 'clothing_size_ui':          return buildClothingSizeUI();
+    case 'fit_type_select':           return buildFitTypeSelect();
+    case 'shoes_size_ui':             return buildShoesSizeUI();
+    case 'bag_size_ui':               return buildBagSizeUI();
+    case 'acc_size_ui':               return buildAccSizeUI();
+    case 'cosmetics_set_select':      return buildCosmeticsSetSelect();
+    case 'furniture_assembly_select': return buildFurnitureAssemblySelect();
+    case 'sports_type_select':        return buildSportsTypeSelect();
+    case 'sports_clothing_type_select': return buildSportsClothingTypeSelect();
+    case 'sports_size_ui':            return buildSportsSizeUI();
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'field-item' + (field.full ? ' full' : '');
+
+  // 스포츠 용품 전용 — 처음엔 숨김
+  if (field.sportsGoods) {
+    wrap.classList.add('sports-goods-field');
+    wrap.style.display = 'none';
+  }
+
+  const lbl = document.createElement('span');
+  lbl.className = 'field-label';
+  lbl.textContent = field.label;
+  if (field.label) wrap.appendChild(lbl);
+
+  if (field.hint) {
+    const hint = document.createElement('span');
+    hint.className = 'field-hint'; hint.textContent = field.hint;
+    wrap.appendChild(hint);
+  }
+
+  if (field.type === 'text') {
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.id = `f_${field.key}`;
+    inp.placeholder = field.placeholder || '';
+    if (field.style) inp.style.cssText = field.style;
+    wrap.appendChild(inp);
+  } else if (field.type === 'textarea') {
+    const ta = document.createElement('textarea');
+    ta.id = `f_${field.key}`; ta.placeholder = field.placeholder || '';
+    if (field.style) ta.style.cssText = field.style;
+    // 화장품 세트 품목 숨김 처리
+    if (field.hiddenId) { wrap.id = field.hiddenId; wrap.style.display = 'none'; }
+    wrap.appendChild(ta);
+  } else if (field.type === 'checkbox_group') {
+    const groupId = `grp_${field.key}`;
+    const hidden = document.createElement('input');
+    hidden.type = 'hidden'; hidden.id = `f_${field.key}`;
+    const chipWrap = document.createElement('div');
+    chipWrap.id = groupId;
+    chipWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;';
+    (field.options || []).forEach(opt => {
+      const lbl2 = document.createElement('label'); lbl2.className = 'tag-chip';
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = opt;
+      cb.addEventListener('change', () => syncTagField(groupId, `f_${field.key}`));
+      lbl2.appendChild(cb); lbl2.appendChild(document.createTextNode(' ' + opt));
+      chipWrap.appendChild(lbl2);
+    });
+    wrap.appendChild(chipWrap); wrap.appendChild(hidden);
+  }
+  return wrap;
+}
+
+// ════════════════════════════════════════════════
+// 5. 특수 UI 빌더들
+// ════════════════════════════════════════════════
+
+// ── 의류 종류 select ──
+function buildClothingTypeSelect() {
+  const wrap = makeFieldWrap('의류 종류', true);
+  const sel = document.createElement('select');
+  sel.id = 'f_clothing_type';
+  [['','종류 선택'],['top','상의'],['bottom','하의']].forEach(([v,t]) => {
+    const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o);
+  });
+  sel.addEventListener('change', () => { clothingType = sel.value; refreshClothingCheckboxes('sizeCheckboxes','sizeFields', clothingType, checkedClothingSizes, CLOTHING_SIZE_OPTIONS, CLOTHING_SIZE_FIELDS, CLOTHING_SIZE_LABELS); });
+  wrap.appendChild(sel); return wrap;
+}
+
+// ── 의류 사이즈 UI (체크박스 + 입력 박스) ──
+function buildClothingSizeUI() {
+  const frag = document.createDocumentFragment();
+  const selectWrap = makeFieldWrap('사이즈 선택 · 해당 사이즈만 체크', true);
+  selectWrap.id = 'clothing_size_select_wrap'; selectWrap.style.display = 'none';
+  const chips = document.createElement('div'); chips.id = 'sizeCheckboxes'; chips.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;';
+  selectWrap.appendChild(chips);
+  const tableWrap = document.createElement('div'); tableWrap.className = 'field-item full'; tableWrap.id = 'sizeFields';
+  frag.appendChild(selectWrap); frag.appendChild(tableWrap);
+  // Fragment 대신 div로 감쌈
+  const container = document.createElement('div'); container.className = 'field-item full'; container.style.cssText = 'padding:0;gap:0;';
+  container.appendChild(selectWrap); container.appendChild(tableWrap);
+  return container;
+}
+
+// ── 핏 유형 ──
+function buildFitTypeSelect() {
+  const wrap = makeFieldWrap('핏 유형', true);
+  const sel = document.createElement('select'); sel.id = 'f_fit_type';
+  const fitOpts = [['','핏 선택'],['슬림핏','슬림핏 — 몸에 붙는 날렵한 실루엣'],['레귤러핏','레귤러핏 — 표준 여유량, 무난한 착용감'],['세미오버핏','세미오버핏 — 약간 여유있는 트렌디한 핏'],['오버핏','오버핏 — 넉넉하고 루즈한 실루엣'],['와이드핏','와이드핏 — 다리통 넉넉한 하의용'],['크롭핏','크롭핏 — 허리 위로 짧게 떨어지는 핏']];
+  fitOpts.forEach(([v,t]) => { const o = document.createElement('option'); o.value=v; o.textContent=t; sel.appendChild(o); });
+  sel.addEventListener('change', onFitTypeChange);
+  wrap.appendChild(sel); return wrap;
+}
+
+// ── 신발 사이즈 UI ──
+function buildShoesSizeUI() {
+  const container = document.createElement('div'); container.className = 'field-item full';
+  const sw = makeFieldWrap('사이즈 선택 (mm) · 해당 사이즈만 체크', true);
+  const chips = document.createElement('div'); chips.id = 'shoesSizeCheckboxes'; chips.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;';
+  SHOES_SIZE_OPTIONS.forEach(size => {
+    const lbl = document.createElement('label'); lbl.className = 'tag-chip';
+    const cb = document.createElement('input'); cb.type='checkbox'; cb.value=size;
+    cb.addEventListener('change', () => {
+      lbl.classList.toggle('checked', cb.checked);
+      renderSizeBoxes('shoesSizeCheckboxes','shoesSizeFields', checkedShoesSizes, SHOES_SIZE_FIELDS, SHOES_SIZE_LABELS, s=>s+'mm');
+    });
+    lbl.appendChild(cb); lbl.appendChild(document.createTextNode(' '+size+'mm')); chips.appendChild(lbl);
+  });
+  sw.appendChild(chips);
+  const tf = document.createElement('div'); tf.className='field-item full'; tf.id='shoesSizeFields';
+  container.appendChild(sw); container.appendChild(tf); return container;
+}
+
+// ── 가방 사이즈 UI ──
+function buildBagSizeUI() {
+  const container = document.createElement('div'); container.className = 'field-item full';
+  const sw = makeFieldWrap('사이즈 선택 · 해당 사이즈만 체크', true);
+  const chips = document.createElement('div'); chips.id = 'bagSizeCheckboxes'; chips.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;';
+  BAG_SIZE_OPTIONS.forEach(size => {
+    const lbl = document.createElement('label'); lbl.className = 'tag-chip';
+    const cb = document.createElement('input'); cb.type='checkbox'; cb.value=size;
+    cb.addEventListener('change', () => {
+      lbl.classList.toggle('checked', cb.checked);
+      renderSizeBoxes('bagSizeCheckboxes','bagSizeFields', checkedBagSizes, BAG_SIZE_FIELDS, BAG_SIZE_LABELS, s=>s==='ONE SIZE'?'ONE SIZE':s+' 사이즈');
+    });
+    lbl.appendChild(cb); lbl.appendChild(document.createTextNode(' '+size)); chips.appendChild(lbl);
+  });
+  sw.appendChild(chips);
+  const tf = document.createElement('div'); tf.className='field-item full'; tf.id='bagSizeFields';
+  container.appendChild(sw); container.appendChild(tf); return container;
+}
+
+// ── 패션잡화 사이즈 UI ──
+function buildAccSizeUI() {
+  const container = document.createElement('div'); container.className = 'field-item full';
+  const sw = makeFieldWrap('사이즈 선택 · 해당 사이즈만 체크', true);
+  const chips = document.createElement('div'); chips.id = 'accSizeCheckboxes'; chips.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;';
+  ACC_SIZE_OPTIONS.forEach(size => {
+    const lbl = document.createElement('label'); lbl.className = 'tag-chip';
+    const cb = document.createElement('input'); cb.type='checkbox'; cb.value=size;
+    cb.addEventListener('change', () => {
+      lbl.classList.toggle('checked', cb.checked);
+      renderSizeBoxes('accSizeCheckboxes','accSizeFields', checkedAccSizes, ACC_SIZE_FIELDS, ACC_SIZE_LABELS, s=>s);
+    });
+    lbl.appendChild(cb); lbl.appendChild(document.createTextNode(' '+size)); chips.appendChild(lbl);
+  });
+  sw.appendChild(chips);
+  const tf = document.createElement('div'); tf.className='field-item full'; tf.id='accSizeFields';
+  container.appendChild(sw); container.appendChild(tf); return container;
+}
+
+// ── 화장품 세트/단품 ──
+function buildCosmeticsSetSelect() {
+  const wrap = makeFieldWrap('상품 구성', true);
+  const cw = document.createElement('div'); cw.style.cssText = 'display:flex;gap:8px;margin-top:8px;';
+  ['단품','세트'].forEach(v => {
+    const lbl = document.createElement('label'); lbl.className='tag-chip'; lbl.style.cssText='flex:1;justify-content:center;';
+    const rb = document.createElement('input'); rb.type='radio'; rb.name='cosmetics_set_type'; rb.value=v;
+    rb.addEventListener('change', () => {
+      document.querySelectorAll('input[name="cosmetics_set_type"]').forEach(r => r.closest('label').classList.toggle('checked',r.checked));
+      const sw = document.getElementById('cosmetics_set_items_wrap');
+      if(sw) sw.style.display = v==='세트' ? 'flex' : 'none';
+    });
+    lbl.appendChild(rb); lbl.appendChild(document.createTextNode(' '+v)); cw.appendChild(lbl);
+  });
+  wrap.appendChild(cw); return wrap;
+}
+
+// ── 가구 조립 방식 ──
+function buildFurnitureAssemblySelect() {
+  const wrap = makeFieldWrap('조립 방식', true);
+  const cw = document.createElement('div'); cw.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;';
+  const hid = document.createElement('input'); hid.type='hidden'; hid.id='f_furniture_assembly';
+  ['직접 조립 (DIY)','배송기사 조립','완제품 (조립 불필요)'].forEach(v => {
+    const lbl = document.createElement('label'); lbl.className='tag-chip';
+    const rb = document.createElement('input'); rb.type='radio'; rb.name='furniture_assembly'; rb.value=v;
+    rb.addEventListener('change', () => {
+      document.querySelectorAll('input[name="furniture_assembly"]').forEach(r => r.closest('label').classList.toggle('checked',r.checked));
+      hid.value = v;
+    });
+    lbl.appendChild(rb); lbl.appendChild(document.createTextNode(' '+v)); cw.appendChild(lbl);
+  });
+  wrap.appendChild(cw); wrap.appendChild(hid); return wrap;
+}
+
+// ── 스포츠 의류/용품 선택 ──
+function buildSportsTypeSelect() {
+  const wrap = makeFieldWrap('상품 종류', true);
+  const cw = document.createElement('div'); cw.style.cssText = 'display:flex;gap:8px;margin-top:8px;';
+  [['clothing','스포츠 의류'],['goods','스포츠 용품']].forEach(([v,t]) => {
+    const lbl = document.createElement('label'); lbl.className='tag-chip'; lbl.style.cssText='flex:1;justify-content:center;';
+    const rb = document.createElement('input'); rb.type='radio'; rb.name='sports_item_type'; rb.value=v;
+    rb.addEventListener('change', () => onSportsTypeChange(v));
+    lbl.appendChild(rb); lbl.appendChild(document.createTextNode(' '+t)); cw.appendChild(lbl);
+  });
+  wrap.appendChild(cw); return wrap;
+}
+
+// ── 스포츠 의류 종류 (상의/하의) ──
+function buildSportsClothingTypeSelect() {
+  const wrap = makeFieldWrap('의류 종류', true);
+  wrap.id = 'sports_clothing_type_wrap'; wrap.style.display = 'none';
+  const sel = document.createElement('select'); sel.id = 'f_sports_clothing_type';
+  [['','종류 선택'],['top','상의'],['bottom','하의']].forEach(([v,t]) => {
+    const o = document.createElement('option'); o.value=v; o.textContent=t; sel.appendChild(o);
+  });
+  sel.addEventListener('change', () => {
+    sportsClothingType = sel.value;
+    refreshClothingCheckboxes('sportsSizeCheckboxes','sportsSizeFields', sportsClothingType, checkedClothingSizes, CLOTHING_SIZE_OPTIONS, CLOTHING_SIZE_FIELDS, CLOTHING_SIZE_LABELS);
+  });
+  wrap.appendChild(sel); return wrap;
+}
+
+// ── 스포츠 의류 사이즈 UI ──
+function buildSportsSizeUI() {
+  const container = document.createElement('div'); container.className='field-item full'; container.id='sports_size_ui_wrap'; container.style.display='none';
+  const sw = makeFieldWrap('사이즈 선택 · 해당 사이즈만 체크', true);
+  const chips = document.createElement('div'); chips.id='sportsSizeCheckboxes'; chips.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;';
+  sw.appendChild(chips);
+  const tf = document.createElement('div'); tf.className='field-item full'; tf.id='sportsSizeFields';
+  container.appendChild(sw); container.appendChild(tf); return container;
+}
+
+function onSportsTypeChange(v) {
+  sportsItemType = v;
+  document.querySelectorAll('input[name="sports_item_type"]').forEach(r => r.closest('label').classList.toggle('checked',r.checked));
+  const clothingTypeWrap = document.getElementById('sports_clothing_type_wrap');
+  const sizeUIWrap       = document.getElementById('sports_size_ui_wrap');
+  const goodsFields      = document.querySelectorAll('.sports-goods-field');
+  if (clothingTypeWrap) clothingTypeWrap.style.display = v==='clothing' ? 'flex' : 'none';
+  if (sizeUIWrap)       sizeUIWrap.style.display       = v==='clothing' ? 'block' : 'none';
+  goodsFields.forEach(el => el.style.display = v==='goods' ? 'flex' : 'none');
+  if (v==='clothing') {
+    sportsClothingType = ''; checkedClothingSizes = [];
+    const sel = document.getElementById('f_sports_clothing_type'); if(sel) sel.value='';
+    const chips = document.getElementById('sportsSizeCheckboxes'); if(chips) chips.innerHTML='';
+    const tf    = document.getElementById('sportsSizeFields'); if(tf) tf.innerHTML='';
+  }
+}
+
+// ── 공용: 의류 체크박스 리프레시 ──
+function refreshClothingCheckboxes(chipsId, tableId, type, checkedArr, sizeOptions, sizeFields, sizeLabels) {
+  const chips = document.getElementById(chipsId); const tf = document.getElementById(tableId);
+  const sw = chipsId==='sizeCheckboxes' ? document.getElementById('clothing_size_select_wrap') : document.getElementById('sports_size_ui_wrap');
+  if (!chips || !tf) return;
+  chips.innerHTML = ''; tf.innerHTML = ''; checkedArr.length = 0;
+  if (!type) { if(sw) sw.style.display='none'; return; }
+  if(sw) sw.style.display = 'block';
+  (sizeOptions[type]||[]).forEach(size => {
+    const lbl = document.createElement('label'); lbl.className='tag-chip';
+    const cb = document.createElement('input'); cb.type='checkbox'; cb.value=size;
+    cb.addEventListener('change', () => {
+      lbl.classList.toggle('checked', cb.checked);
+      renderSizeBoxes(chipsId, tableId, checkedArr, sizeFields[type]||[], sizeLabels,
+        s => type==='bottom' && s!=='FREE' ? s+' 인치' : s==='FREE' ? 'FREE (프리사이즈)' : s+' 사이즈');
+    });
+    const txt = size==='FREE'?'FREE (프리)':(type==='bottom'?size+' 인치':size);
+    lbl.appendChild(cb); lbl.appendChild(document.createTextNode(' '+txt)); chips.appendChild(lbl);
+  });
+}
+
+// ── 공용: 사이즈 박스 렌더 ──
+function renderSizeBoxes(chipsId, tableId, checkedArr, fieldKeys, fieldLabels, titleFn) {
+  const checkboxes = document.querySelectorAll('#'+chipsId+' input[type="checkbox"]');
+  checkedArr.length = 0;
+  checkboxes.forEach(cb => { if(cb.checked) checkedArr.push(cb.value); });
+  const container = document.getElementById(tableId); if(!container) return;
+  container.innerHTML = '';
+  checkedArr.forEach(size => {
+    const box = document.createElement('div'); box.className='size-box';
+    box.innerHTML = `<div class="size-box-title">${titleFn(size)}</div>`;
+    const grid = document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:8px;';
+    fieldKeys.forEach(fk => {
+      const d = document.createElement('div');
+      d.innerHTML = `<label style="font-size:12px;color:var(--text2);">${fieldLabels[fk]}</label><input type="text" placeholder="-" data-size="${size}" data-field="${fk}" style="margin-top:4px;">`;
+      grid.appendChild(d);
+    });
+    box.appendChild(grid); container.appendChild(box);
+  });
+  checkConvertReady();
+}
+
+// ── 헬퍼 ──
+function makeFieldWrap(labelText, full) {
+  const wrap = document.createElement('div');
+  wrap.className = 'field-item' + (full ? ' full' : '');
+  if (labelText) {
+    const lbl = document.createElement('span'); lbl.className='field-label'; lbl.textContent=labelText; wrap.appendChild(lbl);
+  }
+  return wrap;
+}
+
+function onFitTypeChange() {
+  const fitType = document.getElementById('f_fit_type')?.value;
+  const fitDesc = { '슬림핏':'몸의 라인을 그대로 살리는 타이트한 실루엣.','레귤러핏':'어깨·가슴·허리 모두 표준 여유량. 활동성과 단정함.','세미오버핏':'어깨는 정사이즈, 가슴과 허리에 여유가 있어 트렌디한 실루엣.','오버핏':'넉넉하고 루즈하게 떨어지는 캐주얼한 실루엣.','와이드핏':'허리부터 밑단까지 넓게 떨어지는 여유로운 실루엣.','크롭핏':'허리선 위로 짧게 끝나는 실루엣.' };
+  const ta = document.getElementById('f_fit');
+  if (ta && fitType && !ta.value) { ta.value = fitDesc[fitType]||''; ta.classList.add('ai-filled'); }
+}
+
+function syncTagField(wrapId, hiddenId) {
+  const wrap = document.getElementById(wrapId); if(!wrap) return;
+  const values = [];
+  wrap.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    const lbl = cb.closest('label');
+    if(cb.checked){ values.push(cb.value); lbl?.classList.add('checked'); }
+    else lbl?.classList.remove('checked');
+  });
+  const hid = document.getElementById(hiddenId); if(hid) hid.value = values.join(', ');
+}
+
+// ════════════════════════════════════════════════
+// D-day 배너 초기화
+// ════════════════════════════════════════════════
+function initDdayBanner() {
+  const banner   = document.getElementById('ddayBanner');
+  const planEl   = document.getElementById('ddayPlan');
+  const textEl   = document.getElementById('ddayText');
+  const countEl  = document.getElementById('ddayCount');
+  if (!banner) return;
+
+  const user        = JSON.parse(localStorage.getItem('user') || 'null');
+  const paidDate    = localStorage.getItem('paidDate');    // 결제일 ISO 문자열
+  const joinDate    = localStorage.getItem('joinDate');    // 가입일 ISO 문자열
+  const remainCount = parseInt(localStorage.getItem('remainCount') || '0', 10);
+  const planType    = localStorage.getItem('planType');    // 'free' | '100' | '200' | '300'
+
+  if (!user) return; // 비회원: 배너 미표시
+
+  const today    = new Date(); today.setHours(0,0,0,0);
+  let baseDate   = null;
+  let isPaid     = false;
+
+  if (paidDate) {
+    baseDate = new Date(paidDate); baseDate.setHours(0,0,0,0);
+    isPaid   = true;
+  } else if (joinDate) {
+    baseDate = new Date(joinDate); baseDate.setHours(0,0,0,0);
+  }
+
+  if (!baseDate) return;
+
+  const expiry   = new Date(baseDate); expiry.setDate(expiry.getDate() + 30);
+  const diffMs   = expiry - today;
+  const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  if (daysLeft < 0) {
+    planEl.textContent  = isPaid ? `유료 ${planType || ''}건` : '무료체험';
+    textEl.textContent  = '이용 기간이 만료되었습니다.';
+    countEl.textContent = '';
+    banner.className    = 'dday-banner danger';
+    banner.style.display = 'flex';
+    return;
+  }
+
+  if (isPaid) {
+    planEl.textContent  = `유료 · 월 ${planType || ''}건`;
+    textEl.textContent  = `만료까지 D-${daysLeft}일`;
+    countEl.textContent = `잔여 ${remainCount.toLocaleString()}건`;
+  } else {
+    planEl.textContent  = '무료체험';
+    textEl.textContent  = `무료 이용 종료까지 D-${daysLeft}일`;
+    countEl.textContent = '';
+  }
+
+  if (daysLeft <= 3) {
+    banner.className = 'dday-banner danger';
+  } else if (daysLeft <= 7) {
+    banner.className = 'dday-banner warn';
+  } else {
+    banner.className = 'dday-banner';
+  }
+  banner.style.display = 'flex';
+}
+
+function checkConvertReady() {
+  const hasImage    = !!uploadedDataUrl;
+  const hasCategory = !!document.getElementById('categorySelect').value;
+  document.getElementById('convertBtn').disabled = !(hasImage && hasCategory);
+}
+
+// ════════════════════════════════════════════════
+// 6. 이미지 업로드
+// ════════════════════════════════════════════════
+const imgInput   = document.getElementById('imgInput');
+const uploadZone = document.getElementById('uploadZone');
+
+imgInput.addEventListener('change', e => handleFile(e.target.files[0]));
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) handleFile(f);
+});
+
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    uploadedDataUrl = ev.target.result;
+    document.getElementById('previewImg').src = uploadedDataUrl;
+    document.getElementById('previewWrap').style.display = 'block';
+    document.getElementById('extractBtn').disabled = false;
+    checkConvertReady();
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImg() {
+  uploadedDataUrl = null; imgInput.value = '';
+  document.getElementById('previewWrap').style.display = 'none';
+  document.getElementById('extractBtn').disabled = true;
+  checkConvertReady();
+}
+
+// ════════════════════════════════════════════════
+// 7. AI 자동 추출 (서버 프록시)
+// ════════════════════════════════════════════════
+const API_BASE = '/api';
+
+// 인증 토큰 확인
+function getToken() {
+  const token = localStorage.getItem('token');
+  if (!token) { window.location.href = 'login.html'; return null; }
+  return token;
+}
+
+// 사용량 로드
+async function loadUsage() {
+  const token = getToken(); if (!token) return;
+  try {
+    const res = await fetch(`${API_BASE}/usage`, { headers: { 'Authorization': 'Bearer ' + token } });
+    if (res.status === 401) { localStorage.clear(); window.location.href = 'login.html'; return; }
+    const data = await res.json();
+    document.getElementById('usageCard').style.display = 'block';
+    document.getElementById('usageText').textContent = `${data.used}건 사용 / ${data.limit}건 한도`;
+  } catch(e) { console.log('사용량 로드 실패', e); }
+}
+
+async function extractWithAI() {
+  const token = getToken(); if (!token) return;
+  if (!uploadedDataUrl) { alert('이미지를 먼저 첨부해주세요.'); return; }
+  if (!currentCat)      { alert('카테고리를 먼저 선택해주세요.'); return; }
+
+  const btn = document.getElementById('extractBtn');
+  const status = document.getElementById('aiStatus');
+  btn.disabled = true; btn.innerHTML = '<span>⟳</span> AI 분석 중...';
+  status.style.display='block'; status.style.background='var(--blue-bg)'; status.style.borderColor='#B5D4F4'; status.style.color='var(--blue)';
+  status.textContent = '이미지에서 상품 정보를 추출하고 있습니다...';
+
+  const schema = CATEGORY_SCHEMA[currentCat];
+  const allFields = [];
+  if (schema) schema.sections.forEach(sec => sec.fields.forEach(f => {
+    if (!f.type.includes('_ui') && !f.type.includes('_select') && f.key && !f.key.startsWith('_')) allFields.push(f);
+  }));
+  const commonFields = currentCat !== 'recruit' ? [
+    {key:'c_manufacturer',label:'제조자/수입자'},{key:'c_origin',label:'제조국'},
+    {key:'c_warranty',label:'품질보증기준'},{key:'c_as',label:'A/S 책임자'}
+  ] : [];
+
+  try {
+    const res = await fetch(`${API_BASE}/extract`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({
+        imageBase64: uploadedDataUrl,
+        category: currentCat,
+        fields: [...commonFields, ...allFields]
+      })
+    });
+    if (res.status === 401) { localStorage.clear(); window.location.href = 'login.html'; return; }
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'AI 추출 실패');
+
+    const parsed = data.data;
+    let filled = 0;
+    [...commonFields, ...allFields].forEach(f => {
+      if (!parsed[f.key]) return;
+      if (f.type === 'checkbox_group') {
+        const vals = String(parsed[f.key]).split(',').map(s=>s.trim());
+        const gid = `grp_${f.key}`;
+        document.querySelectorAll(`#${gid} input[type="checkbox"]`).forEach(cb => {
+          if (vals.includes(cb.value)) { cb.checked=true; cb.closest('label')?.classList.add('checked'); filled++; }
+        });
+        const hid=document.getElementById(`f_${f.key}`); if(hid) hid.value=vals.join(', ');
+      } else {
+        const el = document.getElementById(`f_${f.key}`);
+        if (el) { el.value=parsed[f.key]; el.classList.add('ai-filled'); filled++; }
+      }
+    });
+
+    status.textContent = `✓ AI가 ${filled}개 항목을 자동으로 채웠습니다. 확인 후 수정해주세요.`;
+    status.style.background='#EAF3DE'; status.style.borderColor='#C0DD97'; status.style.color='#3B6D11';
+    loadUsage();
+  } catch(err) {
+    status.textContent = `오류: ${err.message}`;
+    status.style.background='#FAECE7'; status.style.borderColor='#F5C4B3'; status.style.color='#993C1D';
+  }
+  btn.disabled=false; btn.innerHTML='<span>✦</span> AI로 정보 다시 추출';
+}
+
+// ════════════════════════════════════════════════
+// 8. 값 읽기 헬퍼
+// ════════════════════════════════════════════════
+function fv(id) { return (document.getElementById(id)?.value||'').trim(); }
+
+// ════════════════════════════════════════════════
+// 9. Canvas 변환
+// ════════════════════════════════════════════════
+function doConvert() {
+  // 로그인 체크 및 초기화
+(function() {
+  const token = localStorage.getItem('token');
+  if (!token) { window.location.href = 'login.html'; return; }
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const gnbUser = document.getElementById('gnbUser');
+  if (gnbUser) gnbUser.textContent = user.name || user.email || '';
+  loadUsage();
+})();
+
+function doLogout() {
+  localStorage.clear();
+  window.location.href = 'login.html';
+}
+
+const progressWrap=document.getElementById('progressWrap');
+  const progressFill=document.getElementById('progressFill');
+  const progressLabel=document.getElementById('progressLabel');
+  const convertBtn=document.getElementById('convertBtn');
+  progressWrap.style.display='block'; convertBtn.disabled=true; convertBtn.textContent='변환 중...';
+  const steps=['이미지 로드 중...','레이아웃 구성 중...','텍스트 배치 중...','이미지 생성 중...'];
+  let step=0, pct=0;
+  const iv=setInterval(()=>{ pct=Math.min(pct+Math.random()*20,90); progressFill.style.width=pct+'%'; if(step<steps.length) progressLabel.textContent=steps[step++]; },200);
+  const img=new Image();
+  img.onload=()=>{ clearInterval(iv); progressFill.style.width='100%'; progressLabel.textContent='완료!'; buildCanvas(img); setTimeout(()=>{ progressWrap.style.display='none'; progressFill.style.width='0'; },600); convertBtn.disabled=false; convertBtn.textContent='다시 변환하기'; };
+  img.onerror=()=>{ clearInterval(iv); alert('이미지 로드 실패'); convertBtn.disabled=false; convertBtn.textContent='이미지 변환하기'; };
+  img.src=uploadedDataUrl;
+}
+
+function buildCanvas(img) {
+  const canvas=document.getElementById('resultCanvas');
+  const W=900, H=1200; canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  const cat=currentCat;
+  const catLabel=CATEGORY_SCHEMA[cat]?.label||cat;
+
+  ctx.fillStyle='#F7F6F2'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#1A1A18'; ctx.fillRect(0,0,W,52);
+  ctx.fillStyle='#FFFFFF'; ctx.font='500 13px "DM Mono", monospace';
+  ctx.fillText(`AI COMMERCE SOLUTION · ${catLabel.toUpperCase()} · STRUCTURED DATA`, 24, 32);
+
+  const imgX=24,imgY=72,imgW=360,imgH=360;
+  rrf(ctx,imgX,imgY,imgW,imgH,10,'#FFFFFF');
+  ctx.save(); rrClip(ctx,imgX,imgY,imgW,imgH,10);
+  const sc=Math.max(imgW/img.width, imgH/img.height);
+  ctx.drawImage(img, imgX+(imgW-img.width*sc)/2, imgY+(imgH-img.height*sc)/2, img.width*sc, img.height*sc);
+  ctx.restore();
+  ctx.strokeStyle='#D3D1C7'; ctx.lineWidth=1; rrStroke(ctx,imgX,imgY,imgW,imgH,10);
+
+  const rx=408,rw=W-rx-24;
+  rrf(ctx,rx,imgY,rw,imgH,10,'#FFFFFF');
+  ctx.strokeStyle='#D3D1C7'; ctx.lineWidth=1; rrStroke(ctx,rx,imgY,rw,imgH,10);
+  ctx.fillStyle='#888780'; ctx.font='700 10px "Noto Sans KR",sans-serif';
+  ctx.fillText(cat==='recruit'?'채용 공고':'상품정보고시', rx+16, imgY+28);
+
+  const schema=CATEGORY_SCHEMA[cat];
+  const displayFields=[];
+  if (cat!=='recruit') {
+    displayFields.push(['제조자',fv('c_manufacturer')]);
+    displayFields.push(['제조국',fv('c_origin')]);
+  }
+  if (schema) {
+    schema.sections[0].fields.slice(0,4).forEach(f => {
+      if (!f.type.includes('_ui')&&!f.type.includes('_select')&&f.key&&!f.key.startsWith('_')) {
+        displayFields.push([f.label, fv(`f_${f.key}`)]);
+      }
+    });
+  }
+  displayFields.slice(0,5).forEach(([k,v],i) => {
+    const fy=imgY+50+i*58;
+    ctx.fillStyle='#888780'; ctx.font='400 11px sans-serif'; ctx.fillText(k,rx+16,fy);
+    ctx.fillStyle='#1A1A18'; ctx.font='500 13px "Noto Sans KR",sans-serif';
+    const tv=(v||'—').length>24?(v||'—').slice(0,23)+'…':(v||'—');
+    ctx.fillText(tv,rx+16,fy+18);
+    if(i<4){ ctx.strokeStyle='#F1EFE8'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(rx+16,fy+34); ctx.lineTo(rx+rw-16,fy+34); ctx.stroke(); }
+  });
+
+  let nextY=452;
+
+  // 의류/스포츠 의류 치수 가이드
+  const activeSizes = (cat==='sports'&&sportsItemType==='clothing') ? checkedClothingSizes : checkedClothingSizes;
+  const activeType  = (cat==='sports'&&sportsItemType==='clothing') ? sportsClothingType : clothingType;
+  if ((cat==='clothing'||cat==='sports') && activeSizes.length>0 && activeType) {
+    ctx.fillStyle='#1A1A18'; ctx.font='700 14px "Noto Sans KR",sans-serif'; ctx.fillText('치수 가이드',24,nextY);
+    ctx.strokeStyle='#D3D1C7'; ctx.lineWidth=0.5; ctx.beginPath(); ctx.moveTo(24,nextY+10); ctx.lineTo(W-24,nextY+10); ctx.stroke();
+    const displaySizes=activeSizes.slice(0,4); const colW=(W-48)/Math.max(displaySizes.length,1);
+    const sizeTableId = cat==='sports' ? 'sportsSizeFields' : 'sizeFields';
+    displaySizes.forEach((size,i) => {
+      const inputs=document.querySelectorAll(`#${sizeTableId} input[data-size="${size}"]`);
+      const parts=[]; inputs.forEach(inp=>{ if(inp.value.trim()) parts.push(`${CLOTHING_SIZE_LABELS[inp.dataset.field]||inp.dataset.field}${inp.value.trim()}`); });
+      const cx=24+i*colW;
+      rrf(ctx,cx+4,nextY+18,colW-8,80,8,i===0?'#1A1A18':'#F1EFE8');
+      ctx.fillStyle=i===0?'#FFFFFF':'#5F5E5A'; ctx.font='700 15px "Noto Sans KR",sans-serif';
+      ctx.textAlign='center'; ctx.fillText(size,cx+colW/2,nextY+44);
+      ctx.fillStyle=i===0?'#D3D1C7':'#888780'; ctx.font='400 11px sans-serif';
+      const desc=parts.join(' '); const lines=desc?desc.match(/.{1,12}/g)||['—']:['—'];
+      lines.slice(0,3).forEach((ln,li)=>ctx.fillText(ln,cx+colW/2,nextY+60+li*14));
+      ctx.textAlign='left';
+    });
+    nextY=570;
+  }
+
+  // AI 추천 정보 or 일반 정보 박스
+  const boxColor = cat==='clothing'||cat==='sports' ? '#E6F1FB' : '#F1EFE8';
+  const boxBorder = cat==='clothing'||cat==='sports' ? '#B5D4F4' : '#D3D1C7';
+  rrf(ctx,24,nextY,W-48,H-nextY-30,12,boxColor);
+  ctx.strokeStyle=boxBorder; ctx.lineWidth=1; rrStroke(ctx,24,nextY,W-48,H-nextY-30,12);
+
+  if (cat==='clothing') {
+    rrf(ctx,40,nextY+18,110,24,6,'#185FA5');
+    ctx.fillStyle='#FFFFFF'; ctx.font='700 10px "DM Mono",monospace'; ctx.textAlign='center'; ctx.fillText('AI 추천 정보',95,nextY+34); ctx.textAlign='left';
+    const aiFields=[['핏 유형',fv('f_fit_type')],['핏 가이드',fv('f_fit')],['권장 체형',fv('f_body_type')],['권장 스타일',fv('f_style')],['체형 보완',fv('f_body_comp')],['계절감',fv('f_season_feel')],['신축성',fv('f_stretch')]];
+    let ly=nextY+62;
+    aiFields.forEach(([k,v])=>{ if(!v||ly>H-50) return; ctx.fillStyle='#185FA5'; ctx.font='700 11px "Noto Sans KR",sans-serif'; ctx.fillText(k,40,ly); ly+=18; ctx.fillStyle='#0C447C'; ctx.font='400 13px "Noto Sans KR",sans-serif'; let line=''; [...v].forEach(ch=>{ const t=line+ch; if(ctx.measureText(t).width>W-96){ctx.fillText(line,40,ly);ly+=18;line=ch;}else line=t; }); if(line){ctx.fillText(line,40,ly);ly+=18;} ly+=10; });
+  } else {
+    ctx.fillStyle='#888780'; ctx.font='700 10px "Noto Sans KR",sans-serif'; ctx.fillText('상세 정보', 40, nextY+28);
+    const allInfoFields=[];
+    if(schema) schema.sections.forEach(sec=>sec.fields.forEach(f=>{ if(!f.type.includes('_ui')&&!f.type.includes('_select')&&f.key&&!f.key.startsWith('_')) allInfoFields.push([f.label,fv(`f_${f.key}`)]); }));
+    let ly2=nextY+50;
+    allInfoFields.forEach(([k,v])=>{ if(!v||ly2>H-50) return; ctx.fillStyle='#5F5E5A'; ctx.font='700 11px "Noto Sans KR",sans-serif'; ctx.fillText(k,40,ly2); ctx.fillStyle='#1A1A18'; ctx.font='400 13px "Noto Sans KR",sans-serif'; let line=''; [...v].forEach(ch=>{ const t=line+ch; if(ctx.measureText(t).width>W-96){ctx.fillText(line,40,ly2+16);ly2+=16;line=ch;}else line=t; }); if(line){ctx.fillText(line,40,ly2+16);} ly2+=36; });
+  }
+
+  ctx.fillStyle='#B4B2A9'; ctx.font='400 11px "DM Mono",monospace'; ctx.textAlign='right';
+  ctx.fillText('AI Commerce Solution · Powered by ChatGPT', W-24, H-16); ctx.textAlign='left';
+
+  document.getElementById('resultWrap').style.display='block';
+  document.getElementById('resultWrap').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function doDownload() {
+  const canvas=document.getElementById('resultCanvas');
+  const a=document.createElement('a'); a.download='ai_product_'+Date.now()+'.png'; a.href=canvas.toDataURL('image/png'); a.click();
+}
+
+
+// ════════════════════════════════════════════════
+// 건의사항 제출 (Firebase Firestore 저장)
+// ════════════════════════════════════════════════
+async function submitFeedback() {
+  const category = document.getElementById('fb_category').value;
+  const email    = document.getElementById('fb_email').value.trim();
+  const content  = document.getElementById('fb_content').value.trim();
+  const status   = document.getElementById('fbStatus');
+
+  if (!content) { alert('내용을 입력해주세요.'); return; }
+
+  status.style.display  = 'block';
+  status.style.background = 'var(--blue-bg)';
+  status.style.borderColor = '#B5D4F4';
+  status.style.color    = 'var(--blue)';
+  status.textContent    = '전송 중...';
+
+  try {
+    // Firebase Firestore 저장 (firebase SDK가 로드된 환경에서 동작)
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    const payload = {
+      category: category || '기타',
+      email:    email || '',
+      content,
+      uid:      user?.uid || 'anonymous',
+      userEmail:user?.email || '',
+      createdAt: new Date().toISOString()
+    };
+
+    // Firestore REST API (서버 연동 전 임시: 콘솔 기록)
+    console.log('[건의사항]', payload);
+
+    // TODO: 서버 연동 후 실제 저장으로 교체
+    // await fetch('/api/feedback', { method:'POST', body: JSON.stringify(payload), headers:{'Content-Type':'application/json'} });
+
+    document.getElementById('fb_category').value = '';
+    document.getElementById('fb_email').value    = '';
+    document.getElementById('fb_content').value  = '';
+
+    status.textContent    = '✓ 건의사항이 접수되었습니다. 감사합니다!';
+    status.style.background = '#EAF3DE';
+    status.style.borderColor = '#C0DD97';
+    status.style.color    = '#3B6D11';
+  } catch(err) {
+    status.textContent    = '전송 실패: ' + err.message;
+    status.style.background = '#FAECE7';
+    status.style.borderColor = '#F5C4B3';
+    status.style.color    = '#993C1D';
+  }
+}
+
+// Canvas 유틸
+function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
+function rrf(ctx,x,y,w,h,r,fill){ctx.fillStyle=fill;rr(ctx,x,y,w,h,r);ctx.fill();}
+function rrStroke(ctx,x,y,w,h,r){rr(ctx,x,y,w,h,r);ctx.stroke();}
+function rrClip(ctx,x,y,w,h,r){rr(ctx,x,y,w,h,r);ctx.clip();}
+
+</script>
+</body>
+</html>

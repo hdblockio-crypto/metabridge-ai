@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MetaBridge AI · 대시보드</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F7F6F2; --surface: #FFFFFF; --surface2: #F1EFE8;
+    --border: #D3D1C7; --border2: #B4B2A9;
+    --text: #1A1A18; --text2: #5F5E5A; --text3: #888780;
+    --accent-bg: #1A1A18; --accent-text: #FFFFFF;
+    --blue: #185FA5; --blue-bg: #E6F1FB;
+    --red: #993C1D; --red-bg: #FAECE7;
+    --green: #3B6D11; --green-bg: #EAF3DE;
+    --radius: 10px; --radius-sm: 6px;
+  }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 0 1rem 4rem; }
+
+  .gnb {
+    position: sticky; top: 0; height: 56px;
+    background: rgba(247,246,242,0.92); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2rem; margin: 0 -1rem 2rem; z-index: 100;
+  }
+  .gnb-logo { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); letter-spacing: 0.12em; text-decoration: none; font-weight: 500; }
+  .gnb-nav { display: flex; align-items: center; gap: 4px; }
+  .gnb-link { font-size: 13px; font-weight: 500; color: var(--text2); text-decoration: none; padding: 6px 14px; border-radius: 20px; transition: all 0.18s; border: 1px solid transparent; }
+  .gnb-link:hover { color: var(--text); background: var(--surface2); border-color: var(--border); }
+  .gnb-link.active { color: var(--text); background: var(--surface); border-color: var(--border); box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+  .gnb-right { display: flex; align-items: center; gap: 8px; }
+  .gnb-user { font-size: 12px; font-weight: 500; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; color: var(--text2); }
+  .gnb-btn { font-family: 'Noto Sans KR', sans-serif; font-size: 12px; font-weight: 500; color: var(--text2); background: none; border: none; cursor: pointer; padding: 4px 8px; }
+  .gnb-btn:hover { color: var(--text); }
+
+  /* 모바일 탭바 */
+  .mobile-tabbar { display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: rgba(247,246,242,0.96); backdrop-filter: blur(12px); border-top: 1px solid var(--border); z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
+  .tabbar-inner { display: flex; height: 60px; }
+  .tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-decoration: none; color: var(--text3); font-size: 11px; font-weight: 500; transition: color 0.15s; }
+  .tab-item.active { color: var(--text); }
+  .tab-icon { font-size: 20px; line-height: 1; }
+  .tab-label { font-size: 10px; letter-spacing: 0.02em; }
+
+  .container { max-width: 820px; margin: 0 auto; }
+
+  /* 통계 */
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.2rem; }
+  .stat-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: var(--text3); text-transform: uppercase; margin-bottom: 8px; }
+  .stat-value { font-family: 'DM Mono', monospace; font-size: 26px; font-weight: 500; color: var(--text); }
+  .stat-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+  /* 사용량 카드 */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1rem; }
+  .card-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: var(--text3); text-transform: uppercase; margin-bottom: 14px; }
+
+  .usage-section { margin-bottom: 1rem; }
+  .usage-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .usage-title { font-size: 14px; font-weight: 500; color: var(--text); }
+  .usage-count { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text2); }
+  .usage-bar { height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+  .usage-fill { height: 100%; background: var(--accent-bg); border-radius: 4px; transition: width 0.5s ease; }
+  .usage-fill.warn { background: #E8A020; }
+  .usage-fill.danger { background: #C0392B; }
+  .usage-hint { font-size: 12px; color: var(--text3); }
+
+  /* 히스토리 */
+  .history-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-thumb { width: 48px; height: 48px; border-radius: var(--radius-sm); background: var(--surface2); border: 1px solid var(--border); object-fit: cover; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--text3); font-size: 20px; }
+  .history-info { flex: 1; }
+  .history-cat { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: var(--text3); text-transform: uppercase; }
+  .history-title { font-size: 13px; font-weight: 500; color: var(--text); margin-top: 2px; }
+  .history-time { font-size: 11px; color: var(--text3); margin-top: 2px; font-family: 'DM Mono', monospace; }
+  .history-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; letter-spacing: 0.04em; flex-shrink: 0; }
+  .badge-success { background: var(--green-bg); color: var(--green); }
+  .badge-fail    { background: var(--red-bg); color: var(--red); }
+
+  .empty-state { text-align: center; padding: 3rem; color: var(--text3); font-size: 13px; }
+
+  .go-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'Noto Sans KR', sans-serif; font-size: 14px; font-weight: 500;
+    background: var(--accent-bg); color: var(--accent-text);
+    padding: 11px 20px; border-radius: var(--radius-sm); border: none;
+    cursor: pointer; text-decoration: none; transition: opacity 0.15s;
+    margin-top: 1rem; width: 100%; justify-content: center;
+  }
+  .go-btn:hover { opacity: 0.85; }
+
+  @media (max-width: 540px) {
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .gnb { padding: 0 1rem; height: 52px; }
+    .gnb-nav { display: none; }
+    .mobile-tabbar { display: block; }
+    .container { padding-bottom: 80px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="gnb">
+  <a href="converter.html" class="gnb-logo">MetaBridge AI</a>
+  <div class="gnb-nav">
+    <a href="converter.html" class="gnb-link">변환하기</a>
+    <a href="dashboard.html" class="gnb-link active">대시보드</a>
+  </div>
+  <div class="gnb-right">
+    <span class="gnb-user" id="gnbUser"></span>
+    <button class="gnb-btn" onclick="doLogout()">로그아웃</button>
+  </div>
+</nav>
+
+<nav class="mobile-tabbar">
+  <div class="tabbar-inner">
+    <a href="converter.html" class="tab-item">
+      <span class="tab-icon">⚡</span>
+      <span class="tab-label">변환하기</span>
+    </a>
+    <a href="dashboard.html" class="tab-item active">
+      <span class="tab-icon">📊</span>
+      <span class="tab-label">대시보드</span>
+    </a>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- 통계 -->
+  <div class="stat-grid">
+    <div class="stat-card">
+      <p class="stat-label">이번 달 사용</p>
+      <p class="stat-value" id="statUsed">-</p>
+      <p class="stat-sub" id="statLimit">한도 -건</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">전체 변환</p>
+      <p class="stat-value" id="statTotal">-</p>
+      <p class="stat-sub">누적 사용량</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">성공률</p>
+      <p class="stat-value" id="statSuccess">-</p>
+      <p class="stat-sub">AI 추출 성공</p>
+    </div>
+  </div>
+
+  <!-- 사용량 -->
+  <div class="card">
+    <p class="card-label">이번 달 사용량</p>
+    <div class="usage-section">
+      <div class="usage-header">
+        <span class="usage-title">AI 이미지 추출</span>
+        <span class="usage-count" id="usageCount">- / -건</span>
+      </div>
+      <div class="usage-bar">
+        <div class="usage-fill" id="usageFill" style="width:0%"></div>
+      </div>
+      <p class="usage-hint" id="usageHint">남은 사용량을 확인하세요.</p>
+    </div>
+  </div>
+
+  <!-- 최근 히스토리 -->
+  <div class="card">
+    <p class="card-label">최근 사용 내역</p>
+    <div id="historyList">
+      <div class="empty-state">불러오는 중...</div>
+    </div>
+  </div>
+
+  <a href="converter.html" class="go-btn">⚡ 변환하러 가기</a>
+
+</div>
+
+<script>
+const API_BASE = '/api';
+
+function getToken() {
+  const token = localStorage.getItem('token');
+  if (!token) { window.location.href = 'login.html'; return null; }
+  return token;
+}
+
+function doLogout() {
+  localStorage.clear();
+  window.location.href = 'login.html';
+}
+
+function fmtDateTime(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = Math.floor((now - d) / 1000);
+  if (diff < 60)   return '방금 전';
+  if (diff < 3600) return `${Math.floor(diff/60)}분 전`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}시간 전`;
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+}
+
+const CAT_LABELS = {
+  clothing:'의류', shoes:'신발', bag:'가방', fashion_acc:'패션잡화',
+  cosmetics:'화장품', appliance:'가전제품', living:'생활용품',
+  food:'식품', furniture:'가구', sports:'스포츠/레저', recruit:'채용공고'
+};
+
+async function loadDashboard() {
+  const token = getToken(); if (!token) return;
+  try {
+    const [usageRes, historyRes] = await Promise.all([
+      fetch(`${API_BASE}/usage`,   { headers: { 'Authorization': 'Bearer ' + token } }),
+      fetch(`${API_BASE}/history`, { headers: { 'Authorization': 'Bearer ' + token } })
+    ]);
+
+    if (usageRes.status === 401 || historyRes.status === 401) {
+      localStorage.clear(); window.location.href = 'login.html'; return;
+    }
+
+    const usage   = await usageRes.json();
+    const history = await historyRes.json();
+
+    // 사용량
+    const used  = usage.used  || 0;
+    const limit = usage.limit || 100;
+    const pct   = Math.min((used/limit)*100, 100);
+    const cls   = pct >= 90 ? 'danger' : pct >= 70 ? 'warn' : '';
+
+    document.getElementById('statUsed').textContent  = used;
+    document.getElementById('statLimit').textContent = `한도 ${limit}건`;
+    document.getElementById('usageCount').textContent = `${used} / ${limit}건`;
+    document.getElementById('usageFill').style.width  = pct + '%';
+    document.getElementById('usageFill').className    = `usage-fill ${cls}`;
+    document.getElementById('usageHint').textContent  =
+      pct >= 90 ? '⚠ 한도에 거의 도달했습니다.' :
+      pct >= 70 ? '사용량이 많아지고 있습니다.' :
+      `이번 달 ${limit - used}건 남았습니다.`;
+
+    // 전체 통계
+    const logs = history.logs || [];
+    document.getElementById('statTotal').textContent = usage.totalAll || logs.length;
+    const successCount = logs.filter(l => l.status === 'success').length;
+    document.getElementById('statSuccess').textContent =
+      logs.length ? Math.round((successCount/logs.length)*100) + '%' : '-';
+
+    // 히스토리
+    if (!logs.length) {
+      document.getElementById('historyList').innerHTML = `<div class="empty-state">아직 사용 내역이 없습니다.<br>변환하기 탭에서 시작해보세요!</div>`;
+      return;
+    }
+
+    document.getElementById('historyList').innerHTML = logs.slice(0, 20).map(l => `
+      <div class="history-item">
+        <div class="history-thumb">📦</div>
+        <div class="history-info">
+          <p class="history-cat">${CAT_LABELS[l.category] || l.category || '기타'}</p>
+          <p class="history-title">${l.type === 'extract' ? 'AI 이미지 추출' : '이미지 변환'}</p>
+          <p class="history-time">${fmtDateTime(l.createdAt)}</p>
+        </div>
+        <span class="history-badge ${l.status === 'success' ? 'badge-success' : 'badge-fail'}">
+          ${l.status === 'success' ? '성공' : '실패'}
+        </span>
+      </div>
+    `).join('');
+
+  } catch(e) {
+    document.getElementById('historyList').innerHTML = `<div class="empty-state">데이터를 불러올 수 없습니다.</div>`;
+  }
+}
+
+// 초기화
+(function() {
+  const token = localStorage.getItem('token');
+  if (!token) { window.location.href = 'login.html'; return; }
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  document.getElementById('gnbUser').textContent = user.name || user.email || '';
+  loadDashboard();
+})();
+</script>
+</body>
+</html>

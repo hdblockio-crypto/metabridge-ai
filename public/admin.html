@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MetaBridge AI · 관리자</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F7F6F2; --surface: #FFFFFF; --surface2: #F1EFE8;
+    --border: #D3D1C7; --border2: #B4B2A9;
+    --text: #1A1A18; --text2: #5F5E5A; --text3: #888780;
+    --accent-bg: #1A1A18; --accent-text: #FFFFFF;
+    --blue: #185FA5; --blue-bg: #E6F1FB;
+    --red: #993C1D; --red-bg: #FAECE7;
+    --green: #3B6D11; --green-bg: #EAF3DE;
+    --yellow: #7A5800; --yellow-bg: #FDE9A0;
+    --radius: 10px; --radius-sm: 6px;
+  }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 0 1rem 4rem; }
+
+  .gnb {
+    position: sticky; top: 0; height: 56px;
+    background: rgba(247,246,242,0.92); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2rem; margin: 0 -1rem 2rem; z-index: 100;
+  }
+  .gnb-logo { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); letter-spacing: 0.12em; text-decoration: none; font-weight: 500; }
+  .gnb-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: var(--accent-bg); color: var(--accent-text); letter-spacing: 0.06em; margin-left: 8px; }
+  .gnb-right { display: flex; align-items: center; gap: 8px; }
+  .gnb-user { font-size: 12px; font-weight: 500; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; color: var(--text2); }
+  .gnb-btn { font-family: 'Noto Sans KR', sans-serif; font-size: 12px; font-weight: 500; color: var(--text2); background: none; border: none; cursor: pointer; padding: 4px 8px; }
+  .gnb-btn:hover { color: var(--text); }
+
+  .container { max-width: 960px; margin: 0 auto; }
+
+  /* 탭 */
+  .tab-wrap { display: flex; gap: 4px; margin-bottom: 1.5rem; }
+  .tab-btn {
+    padding: 8px 18px; font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px; font-weight: 500; color: var(--text2);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn.active { background: var(--accent-bg); color: var(--accent-text); border-color: var(--accent-bg); }
+  .tab-btn:hover:not(.active) { color: var(--text); border-color: var(--border2); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* 통계 카드 */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.2rem; }
+  .stat-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: var(--text3); text-transform: uppercase; margin-bottom: 8px; }
+  .stat-value { font-family: 'DM Mono', monospace; font-size: 28px; font-weight: 500; color: var(--text); }
+  .stat-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+  /* 카드 */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1rem; }
+  .card-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: var(--text3); text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+
+  /* 테이블 */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: var(--text3); text-transform: uppercase; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  td { font-size: 13px; color: var(--text); padding: 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+
+  .badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; letter-spacing: 0.04em; }
+  .badge-admin  { background: var(--accent-bg); color: var(--accent-text); }
+  .badge-user   { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+  .badge-active { background: var(--green-bg); color: var(--green); }
+  .badge-inactive { background: var(--red-bg); color: var(--red); }
+  .badge-free   { background: var(--surface2); color: var(--text3); border: 1px solid var(--border); }
+  .badge-pro    { background: var(--yellow-bg); color: var(--yellow); }
+
+  .action-btn {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 12px; font-weight: 500;
+    padding: 5px 12px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text2); cursor: pointer; transition: all 0.15s;
+  }
+  .action-btn:hover { border-color: var(--border2); color: var(--text); }
+  .action-btn.danger { color: var(--red); border-color: #F5C4B3; background: var(--red-bg); }
+  .action-btn.danger:hover { background: #f5c4b3; }
+
+  /* 검색/필터 */
+  .filter-row { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; }
+  .filter-input {
+    font-family: 'Noto Sans KR', sans-serif; font-size: 13px;
+    padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--text); outline: none; flex: 1;
+  }
+  .filter-input:focus { border-color: var(--text); }
+  .filter-select {
+    font-family: 'Noto Sans KR', sans-serif; font-size: 13px;
+    padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--text); outline: none; cursor: pointer;
+  }
+
+  /* 사용량 바 */
+  .usage-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .usage-bar { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .usage-fill { height: 100%; background: var(--accent-bg); border-radius: 3px; transition: width 0.3s; }
+  .usage-fill.warn { background: #E8A020; }
+  .usage-fill.danger { background: #C0392B; }
+  .usage-text { font-size: 12px; color: var(--text3); white-space: nowrap; font-family: 'DM Mono', monospace; }
+
+  /* 로그 테이블 */
+  .log-type { font-family: 'DM Mono', monospace; font-size: 11px; }
+  .empty-state { text-align: center; padding: 3rem; color: var(--text3); font-size: 13px; }
+
+  /* 한도 설정 */
+  .limit-form { display: flex; gap: 8px; align-items: center; }
+  .limit-input {
+    font-family: 'DM Mono', monospace; font-size: 14px;
+    padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--text); outline: none; width: 100px;
+  }
+  .save-btn {
+    font-family: 'Noto Sans KR', sans-serif; font-size: 13px; font-weight: 500;
+    padding: 8px 16px; background: var(--accent-bg); color: var(--accent-text);
+    border: none; border-radius: var(--radius-sm); cursor: pointer; transition: opacity 0.15s;
+  }
+  .save-btn:hover { opacity: 0.85; }
+
+  @media (max-width: 640px) {
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .gnb { padding: 0 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="gnb">
+  <div style="display:flex;align-items:center;">
+    <a href="#" class="gnb-logo">MetaBridge AI</a>
+    <span class="gnb-badge">ADMIN</span>
+  </div>
+  <div class="gnb-right">
+    <span class="gnb-user" id="gnbUser"></span>
+    <button class="gnb-btn" onclick="doLogout()">로그아웃</button>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- 통계 -->
+  <div class="stat-grid">
+    <div class="stat-card">
+      <p class="stat-label">전체 사용자</p>
+      <p class="stat-value" id="statUsers">-</p>
+      <p class="stat-sub">가입자 수</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">이번 달 호출</p>
+      <p class="stat-value" id="statCalls">-</p>
+      <p class="stat-sub">AI API 총 사용량</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">오늘 활성</p>
+      <p class="stat-value" id="statActive">-</p>
+      <p class="stat-sub">오늘 사용자 수</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">예상 비용</p>
+      <p class="stat-value" id="statCost">-</p>
+      <p class="stat-sub">이번 달 API 비용</p>
+    </div>
+  </div>
+
+  <!-- 탭 -->
+  <div class="tab-wrap">
+    <button class="tab-btn active" onclick="switchTab('users')">사용자 관리</button>
+    <button class="tab-btn" onclick="switchTab('logs')">사용 로그</button>
+    <button class="tab-btn" onclick="switchTab('settings')">설정</button>
+  </div>
+
+  <!-- 사용자 관리 -->
+  <div class="tab-panel active" id="panel-users">
+    <div class="card">
+      <div class="card-label">
+        <span>사용자 목록</span>
+        <span id="userCount" style="font-weight:400;text-transform:none;letter-spacing:0;">불러오는 중...</span>
+      </div>
+      <div class="filter-row">
+        <input class="filter-input" type="text" placeholder="이름 또는 이메일 검색..." id="userSearch" oninput="filterUsers()">
+        <select class="filter-select" id="userRoleFilter" onchange="filterUsers()">
+          <option value="">전체</option>
+          <option value="admin">관리자</option>
+          <option value="user">일반</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>이름</th>
+              <th>이메일</th>
+              <th>권한</th>
+              <th>이번 달 사용량</th>
+              <th>한도</th>
+              <th>가입일</th>
+              <th>관리</th>
+            </tr>
+          </thead>
+          <tbody id="userTableBody">
+            <tr><td colspan="7" class="empty-state">불러오는 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 사용 로그 -->
+  <div class="tab-panel" id="panel-logs">
+    <div class="card">
+      <div class="card-label">
+        <span>AI 사용 로그</span>
+        <button class="action-btn" onclick="loadLogs()">새로고침</button>
+      </div>
+      <div class="filter-row">
+        <input class="filter-input" type="text" placeholder="이메일 검색..." id="logSearch">
+        <select class="filter-select" id="logTypeFilter">
+          <option value="">전체</option>
+          <option value="extract">이미지 추출</option>
+          <option value="convert">이미지 변환</option>
+        </select>
+        <button class="action-btn" onclick="filterLogs()">검색</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>시간</th>
+              <th>사용자</th>
+              <th>유형</th>
+              <th>카테고리</th>
+              <th>상태</th>
+            </tr>
+          </thead>
+          <tbody id="logTableBody">
+            <tr><td colspan="5" class="empty-state">불러오는 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 설정 -->
+  <div class="tab-panel" id="panel-settings">
+    <div class="card">
+      <p class="card-label">기본 사용량 한도 설정</p>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6;">신규 가입자에게 적용되는 기본 월 한도입니다.</p>
+      <div class="limit-form">
+        <input class="limit-input" type="number" id="defaultLimit" placeholder="100" min="0">
+        <span style="font-size:13px;color:var(--text2);">건 / 월</span>
+        <button class="save-btn" onclick="saveDefaultLimit()">저장</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-label">관리자 계정</p>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6;">관리자 권한을 부여할 구글 이메일을 서버 .env에서 설정하세요.</p>
+      <div style="font-family:'DM Mono',monospace;font-size:13px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;color:var(--text2);">
+        ADMIN_EMAILS=your@email.com,other@email.com
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-label">API 사용 현황</p>
+      <div style="display:flex;flex-direction:column;gap:12px;" id="apiStats">
+        <p style="font-size:13px;color:var(--text3);">불러오는 중...</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API_BASE = '/api';
+let allUsers = [];
+let allLogs  = [];
+
+// 인증 확인
+function getToken() {
+  const token = localStorage.getItem('token');
+  if (!token) { window.location.href = 'login.html'; return null; }
+  return token;
+}
+
+function doLogout() {
+  localStorage.clear();
+  window.location.href = 'login.html';
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    const tabs = ['users','logs','settings'];
+    btn.classList.toggle('active', tabs[i] === tab);
+  });
+  document.querySelectorAll('.tab-panel').forEach((panel, i) => {
+    const tabs = ['users','logs','settings'];
+    panel.classList.toggle('active', tabs[i] === tab);
+  });
+  if (tab === 'logs') loadLogs();
+  if (tab === 'settings') loadSettings();
+}
+
+// 날짜 포맷
+function fmtDate(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+}
+function fmtDateTime(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return `${fmtDate(iso)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+// 사용량 바
+function usageBar(used, limit) {
+  const pct = limit > 0 ? Math.min((used/limit)*100, 100) : 0;
+  const cls  = pct >= 90 ? 'danger' : pct >= 70 ? 'warn' : '';
+  return `<div class="usage-bar-wrap">
+    <div class="usage-bar"><div class="usage-fill ${cls}" style="width:${pct}%"></div></div>
+    <span class="usage-text">${used}/${limit}</span>
+  </div>`;
+}
+
+// 사용자 목록 로드
+async function loadUsers() {
+  const token = getToken(); if (!token) return;
+  try {
+    const res = await fetch(`${API_BASE}/admin/users`, { headers: { 'Authorization': 'Bearer ' + token } });
+    if (res.status === 401) { localStorage.clear(); window.location.href = 'login.html'; return; }
+    if (res.status === 403) { alert('관리자 권한이 없습니다.'); window.location.href = 'converter.html'; return; }
+    const data = await res.json();
+    allUsers = data.users || [];
+    renderUsers(allUsers);
+
+    // 통계
+    document.getElementById('statUsers').textContent = allUsers.length;
+    const totalCalls = allUsers.reduce((s, u) => s + (u.monthlyUsed || 0), 0);
+    document.getElementById('statCalls').textContent = totalCalls.toLocaleString();
+    document.getElementById('statCost').textContent = '$' + (totalCalls * 0.0008).toFixed(2);
+  } catch(e) {
+    document.getElementById('userTableBody').innerHTML = `<tr><td colspan="7" class="empty-state">불러오기 실패</td></tr>`;
+  }
+}
+
+function renderUsers(users) {
+  document.getElementById('userCount').textContent = `${users.length}명`;
+  if (!users.length) {
+    document.getElementById('userTableBody').innerHTML = `<tr><td colspan="7" class="empty-state">사용자가 없습니다.</td></tr>`;
+    return;
+  }
+  document.getElementById('userTableBody').innerHTML = users.map(u => `
+    <tr>
+      <td>${u.name || '-'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;">${u.email}</td>
+      <td><span class="badge badge-${u.role}">${u.role === 'admin' ? '관리자' : '일반'}</span></td>
+      <td>${usageBar(u.monthlyUsed || 0, u.monthlyLimit || 100)}</td>
+      <td>
+        <div class="limit-form">
+          <input class="limit-input" type="number" value="${u.monthlyLimit || 100}" id="limit-${u.id}" style="width:70px;font-size:12px;padding:4px 8px;">
+          <button class="action-btn" onclick="updateLimit('${u.id}')">저장</button>
+        </div>
+      </td>
+      <td style="color:var(--text3);font-size:12px;">${fmtDate(u.createdAt)}</td>
+      <td style="display:flex;gap:6px;">
+        <button class="action-btn" onclick="toggleRole('${u.id}','${u.role}')">${u.role === 'admin' ? '권한 해제' : '관리자 지정'}</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function filterUsers() {
+  const q    = document.getElementById('userSearch').value.toLowerCase();
+  const role = document.getElementById('userRoleFilter').value;
+  const filtered = allUsers.filter(u => {
+    const matchQ    = !q || u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q);
+    const matchRole = !role || u.role === role;
+    return matchQ && matchRole;
+  });
+  renderUsers(filtered);
+}
+
+async function updateLimit(uid) {
+  const token = getToken(); if (!token) return;
+  const limit = parseInt(document.getElementById(`limit-${uid}`).value);
+  if (isNaN(limit) || limit < 0) { alert('올바른 숫자를 입력해주세요.'); return; }
+  try {
+    const res = await fetch(`${API_BASE}/admin/users/${uid}/limit`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ limit })
+    });
+    if (!res.ok) throw new Error('저장 실패');
+    alert('저장되었습니다.');
+    loadUsers();
+  } catch(e) { alert(e.message); }
+}
+
+async function toggleRole(uid, currentRole) {
+  const token = getToken(); if (!token) return;
+  const newRole = currentRole === 'admin' ? 'user' : 'admin';
+  if (!confirm(`${newRole === 'admin' ? '관리자로 지정' : '일반 사용자로 변경'}하시겠습니까?`)) return;
+  try {
+    const res = await fetch(`${API_BASE}/admin/users/${uid}/role`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ role: newRole })
+    });
+    if (!res.ok) throw new Error('변경 실패');
+    loadUsers();
+  } catch(e) { alert(e.message); }
+}
+
+// 로그
+async function loadLogs() {
+  const token = getToken(); if (!token) return;
+  try {
+    const res = await fetch(`${API_BASE}/admin/logs`, { headers: { 'Authorization': 'Bearer ' + token } });
+    const data = await res.json();
+    allLogs = data.logs || [];
+    renderLogs(allLogs);
+    document.getElementById('statActive').textContent = new Set(
+      allLogs.filter(l => fmtDate(l.createdAt) === fmtDate(new Date().toISOString())).map(l => l.userId)
+    ).size;
+  } catch(e) {
+    document.getElementById('logTableBody').innerHTML = `<tr><td colspan="5" class="empty-state">불러오기 실패</td></tr>`;
+  }
+}
+
+function renderLogs(logs) {
+  if (!logs.length) {
+    document.getElementById('logTableBody').innerHTML = `<tr><td colspan="5" class="empty-state">로그가 없습니다.</td></tr>`;
+    return;
+  }
+  document.getElementById('logTableBody').innerHTML = logs.map(l => `
+    <tr>
+      <td style="color:var(--text3);font-size:12px;font-family:'DM Mono',monospace;">${fmtDateTime(l.createdAt)}</td>
+      <td style="font-size:12px;">${l.userEmail || '-'}</td>
+      <td><span class="log-type">${l.type === 'extract' ? '📷 이미지 추출' : '🔄 이미지 변환'}</span></td>
+      <td style="font-size:12px;color:var(--text2);">${l.category || '-'}</td>
+      <td><span class="badge ${l.status === 'success' ? 'badge-active' : 'badge-inactive'}">${l.status === 'success' ? '성공' : '실패'}</span></td>
+    </tr>
+  `).join('');
+}
+
+function filterLogs() {
+  const q    = document.getElementById('logSearch').value.toLowerCase();
+  const type = document.getElementById('logTypeFilter').value;
+  const filtered = allLogs.filter(l => {
+    const matchQ    = !q || l.userEmail?.toLowerCase().includes(q);
+    const matchType = !type || l.type === type;
+    return matchQ && matchType;
+  });
+  renderLogs(filtered);
+}
+
+// 설정
+async function loadSettings() {
+  const token = getToken(); if (!token) return;
+  try {
+    const res  = await fetch(`${API_BASE}/admin/settings`, { headers: { 'Authorization': 'Bearer ' + token } });
+    const data = await res.json();
+    document.getElementById('defaultLimit').value = data.defaultLimit || 100;
+    document.getElementById('apiStats').innerHTML = `
+      <div style="display:flex;justify-content:space-between;font-size:13px;">
+        <span style="color:var(--text2);">이번 달 총 API 호출</span>
+        <span style="font-family:'DM Mono',monospace;">${(data.totalCalls||0).toLocaleString()}건</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;">
+        <span style="color:var(--text2);">예상 API 비용</span>
+        <span style="font-family:'DM Mono',monospace;">$${((data.totalCalls||0) * 0.0008).toFixed(2)}</span>
+      </div>
+    `;
+  } catch(e) { console.log('설정 로드 실패', e); }
+}
+
+async function saveDefaultLimit() {
+  const token = getToken(); if (!token) return;
+  const limit = parseInt(document.getElementById('defaultLimit').value);
+  if (isNaN(limit) || limit < 0) { alert('올바른 숫자를 입력해주세요.'); return; }
+  try {
+    const res = await fetch(`${API_BASE}/admin/settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ defaultLimit: limit })
+    });
+    if (!res.ok) throw new Error('저장 실패');
+    alert('기본 한도가 저장되었습니다.');
+  } catch(e) { alert(e.message); }
+}
+
+// 초기화
+(function() {
+  const token = localStorage.getItem('token');
+  if (!token) { window.location.href = 'login.html'; return; }
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  if (user.role !== 'admin') { window.location.href = 'converter.html'; return; }
+  document.getElementById('gnbUser').textContent = user.name || user.email || '';
+  loadUsers();
+})();
+</script>
+</body>
+</html>

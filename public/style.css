@@ -1,0 +1,12 @@
+/* public/style.css */
+body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: #F7F6F2;
+    padding: 2rem;
+}
+
+.container { max-width: 800px; margin: 0 auto; }
+.card { background: #fff; padding: 20px; border-radius: 10px; border: 1px solid #ddd; }
+.upload-zone { border: 2px dashed #ccc; padding: 40px; text-align: center; cursor: pointer; }
+#extractBtn { width: 100%; padding: 15px; background: #1A1A18; color: #fff; border: none; cursor: pointer; margin-top: 10px; }
+#extractBtn:disabled { background: #ccc; }
