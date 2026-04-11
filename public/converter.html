@@ -490,6 +490,7 @@
     <div class="result-body">
       <canvas id="resultCanvas"></canvas>
       <button class="download-btn" onclick="doDownload()">⬇ PNG 다운로드</button>
+      <button class="download-btn" onclick="resetConverter()" style="margin-top:8px;background:#F1EFE8;color:var(--text);border-color:var(--border);">🔄 다른 상품 분석하기</button>
     </div>
   </div>
 
@@ -1472,6 +1473,29 @@ function buildCanvas(img) {
 function doDownload() {
   const canvas=document.getElementById('resultCanvas');
   const a=document.createElement('a'); a.download='ai_product_'+Date.now()+'.png'; a.href=canvas.toDataURL('image/png'); a.click();
+}
+
+function resetConverter() {
+  // 이미지 초기화
+  uploadedDataUrl = null;
+  document.getElementById('imgInput').value = '';
+  document.getElementById('previewWrap').style.display = 'none';
+  document.getElementById('extractBtn').disabled = true;
+  document.getElementById('extractBtn').innerHTML = '<span>✦</span> AI로 정보 자동 추출';
+  document.getElementById('aiStatus').style.display = 'none';
+
+  // 카테고리 초기화
+  document.getElementById('categorySelect').value = '';
+  document.getElementById('commonSection').classList.add('hidden');
+  document.getElementById('categoryFormSection').innerHTML = '';
+
+  // 결과 숨기기
+  document.getElementById('resultWrap').style.display = 'none';
+  document.getElementById('convertBtn').disabled = true;
+  document.getElementById('convertBtn').textContent = '이미지 변환하기';
+
+  // 맨 위로 스크롤
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 
