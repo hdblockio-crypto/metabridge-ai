@@ -1237,9 +1237,7 @@ const API_BASE = '/api';
 
 // 인증 토큰 확인
 function getToken() {
-  const token = localStorage.getItem('token');
-  if (!token) { window.location.href = 'login.html'; return null; }
-  return token;
+  return localStorage.getItem('token') || null;
 }
 
 // 사용량 로드
@@ -1255,7 +1253,13 @@ async function loadUsage() {
 }
 
 async function extractWithAI() {
-  const token = getToken(); if (!token) return;
+  const token = getToken();
+  if (!token) {
+    if (confirm('AI 추출 기능은 로그인이 필요합니다.\n로그인 페이지로 이동할까요?')) {
+      window.location.href = 'login.html';
+    }
+    return;
+  }
   if (!uploadedDataUrl) { alert('이미지를 먼저 첨부해주세요.'); return; }
   if (!currentCat)      { alert('카테고리를 먼저 선택해주세요.'); return; }
 
@@ -1325,14 +1329,25 @@ function fv(id) { return (document.getElementById(id)?.value||'').trim(); }
 // 9. Canvas 변환
 // ════════════════════════════════════════════════
 function doConvert() {
-  // 로그인 체크 및 초기화
+// 로그인 체크 및 초기화
 (function() {
   const token = localStorage.getItem('token');
-  if (!token) { window.location.href = 'login.html'; return; }
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const gnbUser = document.getElementById('gnbUser');
-  if (gnbUser) gnbUser.textContent = user.name || user.email || '';
-  loadUsage();
+  
+  if (token) {
+    // 로그인 상태
+    if (gnbUser) gnbUser.textContent = user.name || user.email || '';
+    loadUsage();
+  } else {
+    // 비로그인 데모 모드
+    if (gnbUser) gnbUser.textContent = '데모 모드';
+    const usageCard = document.getElementById('usageCard');
+    if (usageCard) {
+      usageCard.style.display = 'block';
+      document.getElementById('usageText').textContent = '로그인하면 AI 추출 기능을 사용할 수 있습니다.';
+    }
+  }
 })();
 
 function doLogout() {
