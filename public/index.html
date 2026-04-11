@@ -739,8 +739,7 @@ footer {
     <a href="login.html?redirect=converter.html" class="gnb-link" id="gnbConverter">변환하기</a>
     <a href="login.html?redirect=dashboard.html" class="gnb-link" id="gnbDashboard">대시보드</a>
   </div>
-  <div class="gnb-right">
-    <a href="login.html?redirect=dashboard.html" class="gnb-cta" id="gnbCta">시작하기 →</a>
+  <div class="gnb-right" id="gnbRight">
   </div>
 </nav>
 
@@ -1011,8 +1010,6 @@ if (user && token) {
   // 로그인 상태 → 링크를 직접 페이지로 변경
   document.getElementById('gnbConverter').href = 'converter.html';
   document.getElementById('gnbDashboard').href = 'dashboard.html';
-  document.getElementById('gnbCta').textContent = '대시보드';
-  document.getElementById('gnbCta').href = 'dashboard.html';
 
   // 히어로 버튼도 직접 이동
   document.querySelectorAll('a[href*="login.html"]').forEach(el => {
