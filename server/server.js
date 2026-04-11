@@ -61,6 +61,29 @@ app.get('/api/history', authMiddleware, (req, res) => {
   res.json({ logs });
 });
  
+// 이미지 캐시 (메모리 캐시 - 동일 이미지 재분석 방지)
+const extractCache = new Map();
+
+// 이미지 해시 생성 (간단한 체크섬)
+function hashImage(base64) {
+  let hash = 0;
+  const sample = base64.slice(0, 500) + base64.slice(-500);
+  for (let i = 0; i < sample.length; i++) {
+    hash = ((hash << 5) - hash) + sample.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash.toString();
+}
+
+// 카테고리별 핵심 프롬프트 (토큰 절감)
+const CATEGORY_PROMPTS = {
+  clothing: `의류 상품 이미지를 분석하여 JSON을 채워라. 색상, 소재, 핏, 스타일, 시즌을 중점 분석하라.`,
+  shoes: `신발 상품 이미지를 분석하여 JSON을 채워라. 소재, 색상, 굽 높이, 스타일을 중점 분석하라.`,
+  bag: `가방 상품 이미지를 분석하여 JSON을 채워라. 소재, 색상, 크기, 용도를 중점 분석하라.`,
+  cosmetics: `화장품 상품 이미지를 분석하여 JSON을 채워라. 제품 유형, 색상, 용량을 중점 분석하라.`,
+  default: `상품 이미지를 분석하여 JSON을 채워라. 눈에 보이는 정보를 정확히 추출하라.`
+};
+
 // AI 이미지 추출
 app.post('/api/extract', authMiddleware, async (req, res) => {
   if (!db) return res.status(500).json({ error: 'DB 없음' });
@@ -73,16 +96,27 @@ app.post('/api/extract', authMiddleware, async (req, res) => {
   try {
     const { imageBase64, category, fields } = req.body;
     if (!imageBase64 || !category) return res.status(400).json({ error: '이미지와 카테고리 필요' });
- 
+
+    // 캐시 확인
+    const cacheKey = hashImage(imageBase64) + '_' + category;
+    if (extractCache.has(cacheKey)) {
+      console.log('[캐시 히트]', cacheKey);
+      db.prepare('UPDATE users SET monthly_used = monthly_used + 1 WHERE id = ?').run(req.user.id);
+      db.prepare('INSERT INTO usage_log (user_id, type, category, status) VALUES (?, ?, ?, ?)').run(req.user.id, 'extract', category, 'success');
+      return res.json({ success: true, data: extractCache.get(cacheKey), cached: true });
+    }
+
     const { OpenAI } = require('openai');
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
- 
+
     const tmpl = {};
     (fields || []).forEach(f => { tmpl[f.key] = null; });
- 
-    const prompt = `아래 이미지를 분석하여 다음 JSON 필드를 채워라.
-규칙: 1.이미지에서 명확히 확인된 정보만 입력 2.확인 불가는 null 3.JSON 외 텍스트 출력 금지
- 
+
+    // 카테고리별 최적화 프롬프트
+    const categoryPrompt = CATEGORY_PROMPTS[category] || CATEGORY_PROMPTS.default;
+    const prompt = `${categoryPrompt}
+규칙: 1.이미지에서 명확히 확인된 정보만 입력 2.확인 불가는 null 3.JSON 외 텍스트 출력 금지 4.한국어로 작성
+
 ${JSON.stringify(tmpl, null, 2)}`;
  
     const response = await openai.chat.completions.create({
@@ -96,6 +130,11 @@ ${JSON.stringify(tmpl, null, 2)}`;
     });
  
     const parsed = JSON.parse(response.choices[0].message.content);
+
+    // 캐시 저장 (최대 100개, 1시간)
+    if (extractCache.size >= 100) extractCache.delete(extractCache.keys().next().value);
+    extractCache.set(cacheKey, parsed);
+    setTimeout(() => extractCache.delete(cacheKey), 60 * 60 * 1000);
  
     // 사용량 증가
     db.prepare('UPDATE users SET monthly_used = monthly_used + 1 WHERE id = ?').run(req.user.id);
