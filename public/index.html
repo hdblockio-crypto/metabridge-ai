@@ -1011,9 +1011,18 @@ if (user && token) {
   // 로그인 상태 → 링크를 직접 페이지로 변경
   document.getElementById('gnbConverter').href = 'converter.html';
   document.getElementById('gnbDashboard').href = 'dashboard.html';
-  // 로그인 버튼 숨기기
+  // 로그인 버튼 숨기고 로그아웃 버튼 추가
   const loginBtn = document.getElementById('gnbLoginBtn');
   if (loginBtn) loginBtn.style.display = 'none';
+  const gnbRight = document.getElementById('gnbRight');
+  if (gnbRight) {
+    const logoutBtn = document.createElement('button');
+    logoutBtn.textContent = '로그아웃';
+    logoutBtn.className = 'gnb-cta';
+    logoutBtn.style.cssText = 'background:none;border:1px solid var(--border);color:var(--text2);cursor:pointer;font-family:inherit;';
+    logoutBtn.onclick = () => { localStorage.clear(); window.location.href = 'index.html'; };
+    gnbRight.appendChild(logoutBtn);
+  }
 
   // 히어로 버튼도 직접 이동
   document.querySelectorAll('a[href*="login.html"]').forEach(el => {
