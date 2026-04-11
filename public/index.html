@@ -740,6 +740,7 @@ footer {
     <a href="login.html?redirect=dashboard.html" class="gnb-link" id="gnbDashboard">대시보드</a>
   </div>
   <div class="gnb-right" id="gnbRight">
+    <a href="login.html" class="gnb-cta" id="gnbLoginBtn">로그인</a>
   </div>
 </nav>
 
@@ -1010,6 +1011,9 @@ if (user && token) {
   // 로그인 상태 → 링크를 직접 페이지로 변경
   document.getElementById('gnbConverter').href = 'converter.html';
   document.getElementById('gnbDashboard').href = 'dashboard.html';
+  // 로그인 버튼 숨기기
+  const loginBtn = document.getElementById('gnbLoginBtn');
+  if (loginBtn) loginBtn.style.display = 'none';
 
   // 히어로 버튼도 직접 이동
   document.querySelectorAll('a[href*="login.html"]').forEach(el => {
